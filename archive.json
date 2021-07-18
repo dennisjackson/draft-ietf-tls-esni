@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2021-07-15T00:54:01.209107+00:00",
+  "timestamp": "2021-07-18T00:54:50.557235+00:00",
   "repo": "tlswg/draft-ietf-tls-esni",
   "labels": [
     {
@@ -11071,7 +11071,7 @@
       "labels": [],
       "body": "Hello,\r\n\r\nWhile reading this specification, section 8.2. states that \"MITM proxies\" are required to remove any extensions they do not understand. \r\n\r\n> A more serious problem is MITM proxies which do not support this\r\n   extension.  [RFC8446], Section 9.3 requires that such proxies remove\r\n   any extensions they do not understand.  The handshake will then\r\n   present a certificate based on the public name, without echoing the\r\n   \"encrypted_client_hello\" extension to the client.\r\n\r\nHowever, looking at RFC 8446 Section 9.3, the first section you encounter on forwarding middleboxes explicitly states the opposite: the middlebox is not allowed to change or modify any parameters in the handshake and subsequent traffic if it doesn't understand some parameter in the ClientHello:\r\n\r\n> A middlebox which forwards ClientHello parameters it does not\r\n   understand MUST NOT process any messages beyond that ClientHello.\r\n   It MUST forward all subsequent traffic unmodified.  Otherwise, it\r\n   may fail to interoperate with newer clients and servers.\r\n\r\nReading further, we find the bullet point the warning in section 8.2 refers to:\r\n\r\n> A middlebox which terminates a TLS connection MUST behave as a\r\n   compliant TLS server (to the original client), including having a\r\n   certificate which the client is willing to accept, and also as a\r\n   compliant TLS client (to the original server), including verifying\r\n   the original server's certificate.  In particular, it MUST\r\n   generate its own ClientHello containing only parameters it\r\n   understands, and it MUST generate a fresh ServerHello random\r\n   value, rather than forwarding the endpoint's value.\r\n\r\nHere, the middlebox isn't so much required to \"remove any extension they do not understand\", but to \"generate its own ClientHello containing only parameters it understands\". After carefully reading over these sections multiple times, I do get the message, but I feel like it could be better worded as not to create confusion. The words \"MITM proxy\" could refer to the forwarding middlebox as well. Changing the wording in, for example, the following way makes the reference more clear in my opinion:\r\n\r\n> A more serious problem is MITM proxies which do not support this\r\nextension.  [RFC8446], Section 9.3 requires that such proxies generate\r\ntheir own ClientHello containing only parameters they understand. The\r\nmiddlebox will then present a certificate based on the public name to\r\nthe client, without echoing the \"encrypted_client_hello\" extension.\r\n\r\nWhat do you think about this?",
       "createdAt": "2021-07-14T09:34:15Z",
-      "updatedAt": "2021-07-14T14:55:58Z",
+      "updatedAt": "2021-07-15T21:30:48Z",
       "closedAt": null,
       "comments": [
         {
@@ -11080,6 +11080,27 @@
           "body": "> While reading this specification, section 8.2. states that \"MITM proxies\" are required to remove any extensions they do not understand.\r\n\r\nYes. Or, more accurately, it's required to send a ClientHello only containing things it supports. Whether it choses to base its capabilities on the original ClientHello is its business. Though, of course, there are security implications for either option and more reason why MITM proxies are a terrible idea.\r\n\r\nEither way, if you are a MITM proxy, you are terminating TLS, which means there are two TLS handshakes and, in one of them, you are a client. When acting as a client, you cannot send things you don't understand. Otherwise the server will respond in a way that confuses you.\r\n\r\n> However, looking at RFC 8446 Section 9.3, the first section you encounter on forwarding middleboxes explicitly states the opposite: the middlebox is not allowed to change or modify any parameters in the handshake and subsequent traffic if it doesn't understand some parameter in the ClientHello:\r\n\r\nRFC 8446 does not discuss \"forwarding middleboxes\" at all. That section talks about a \"middlebox which forwards ClientHello parameters _it does not understand_\". Any middlebox that does this cannot terminate TLS in the first place (i.e. not a MITM proxy) because anyone terminating TLS is limited to only sending things it understands.\r\n\r\nRather, this section is talking about non-terminating proxies that attempt to inspect the cleartext portions of TLS anyway. We ran into quite a lot of those in the process of deploying TLS 1.3 and most of them were broken. This text clarifies that TLS promises no continuity of syntax after the ClientHello. A non-terminating proxy gets to assume it can parse the ClientHello and nothing else.\r\n\r\n> The words \"MITM proxy\" could refer to the forwarding middlebox as well. \r\n\r\nSee above. If you're forwarding things you understand, you cannot terminate TLS. The section doesn't apply to what this draft refers to as \"MITM proxy\" at all. (Well, there are some weird things that try to selectively proxy TLS. There are [quite a lot of problems](https://www.imperialviolet.org/2018/03/10/tls13.html) with this approach, but in that case which rules apply depends on which choice the proxy made. Additionally, the proxy cannot violate the forwarding middlebox rule in the process of making the decision. This basically boils down to saying you cannot make your decision based on anything after the ClientHello because, after that point, you cannot parse anything.)\r\n\r\nProbably we should change this draft to match RFC 8446 in terminology and replace \"MITM proxies\" with \"TLS-terminating proxies\".\r\n\r\n> Section 9.3 requires that such proxies generate their own ClientHello containing only parameters they understand.\r\n\r\nYeah, I think that change is a good one.",
           "createdAt": "2021-07-14T14:55:58Z",
           "updatedAt": "2021-07-14T14:55:58Z"
+        },
+        {
+          "author": "mosterdt",
+          "authorAssociation": "NONE",
+          "body": "Thank you for your detailed reply. I do understand the reasons for being this strict about middlebox behaviour. I certainly don't think there is anything wrong. It's just that the terminology is somewhat confusing. After careful reading, it's indeed clear that the section on non-terminating proxies is not really relevant for ESNI, but due to the wording used in this RFC, it looks at first glance that 8.2 is referring to that section:\r\n> Section 9.3 requires that such proxies remove any extensions they do not understand\r\n\r\nvs\r\n\r\n> A middlebox which forwards ClientHello parameters it does not understand MUST NOT process any messages beyond that ClientHello.\r\n\r\nIt's a small detail, and not really that important. But I think it would make it more clear if the wording is changed slightly. I do like \"TLS-terminating proxies\" as well. Thanks for the hard work!",
+          "createdAt": "2021-07-15T08:07:44Z",
+          "updatedAt": "2021-07-15T08:07:44Z"
+        },
+        {
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "body": "How does https://github.com/tlswg/draft-ietf-tls-esni/pull/475 look?",
+          "createdAt": "2021-07-15T16:29:12Z",
+          "updatedAt": "2021-07-15T16:29:12Z"
+        },
+        {
+          "author": "mosterdt",
+          "authorAssociation": "NONE",
+          "body": "Looks good to me! Thank you for taking the time to look at this.\n\nOn Thu, 15 Jul 2021, 18:29 David Benjamin, ***@***.***> wrote:\n\n> How does #475 <https://github.com/tlswg/draft-ietf-tls-esni/pull/475>\n> look?\n>\n> \u2014\n> You are receiving this because you authored the thread.\n> Reply to this email directly, view it on GitHub\n> <https://github.com/tlswg/draft-ietf-tls-esni/issues/474#issuecomment-880842255>,\n> or unsubscribe\n> <https://github.com/notifications/unsubscribe-auth/ACE3QJM22SXAMILF4TG5C5TTX4EGHANCNFSM5ALCNE2Q>\n> .\n>\n",
+          "createdAt": "2021-07-15T21:30:47Z",
+          "updatedAt": "2021-07-15T21:30:47Z"
         }
       ]
     }
@@ -46995,6 +47016,54 @@
       "mergeCommit": null,
       "comments": [],
       "reviews": []
+    },
+    {
+      "number": 475,
+      "id": "MDExOlB1bGxSZXF1ZXN0NjkwODc0MjYx",
+      "title": "Revise middlebox section.",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/475",
+      "state": "OPEN",
+      "author": "davidben",
+      "authorAssociation": "CONTRIBUTOR",
+      "assignees": [],
+      "labels": [],
+      "body": "Closes #474. This makes a few changes to the middlebox section:\r\n\r\nFirst, using \"MITM proxies\" when RFC8446 talks about terminating TLS was\r\nconfusing, so align with the RFC8446 terminology.\r\n\r\nNext, RFC8446 does not quite require dropping unknown extensions, only\r\ngenerating your own ClientHello. Dropping unknown extensions happens if\r\nthe proxy tries to intersect its true capabilities with that of the\r\nclient. I've also dropped the \"a more serious problem\" introduction\r\nsince the point of this section is that it's not a serious problem.\r\n\r\nFinally, I've dropped the \"non-conformant MITM proxy\" paragraph. It's\r\nslightly out of date now that we've unified everything around trial\r\ndecryption. I believe, depending on what the proxy does with the\r\nserver's EncryptedExtensions response, things will either break, work on\r\naccident, or retry loop and hit the limit. It doesn't seem worth\r\nexpending a whole lot of text on something that is the proxy's fault.\r\n\r\nThis does drop the \"Clients SHOULD NOT attempt to repair the connection\r\nin this case\" line, but the client couldn't really detect this case\r\nanyway. It looks like any old connection failure without a proxy, and\r\nthe usual considerations for changing your TLS config on connection\r\nfailure apply.",
+      "createdAt": "2021-07-15T16:28:52Z",
+      "updatedAt": "2021-07-16T15:36:57Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "57b9e22624f1c7401cec35bb7ffed9ee93bb7041",
+      "headRepository": "davidben/draft-ietf-tls-esni",
+      "headRefName": "revise-middlebox",
+      "headRefOid": "fd6ca03279008075e9cf94d16cad4887913925c5",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [
+        {
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "body": "Ah good point. I dropped the \"which do not support this extension\" clause on accident. How's this new iteration?\r\n\r\n(Seems best not to get into middleboxes which do support the extension. \"which likely means being involved in\" feels too handwaivy, and I'd rather not expend a lot of text around how DNS works with HTTP CONNECT proxies, CDNs where the \"proxy\" is on the server's side and controls DNS, etc.)",
+          "createdAt": "2021-07-16T15:36:57Z",
+          "updatedAt": "2021-07-16T15:36:57Z"
+        }
+      ],
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzA3ODkwMTE1",
+          "commit": {
+            "abbreviatedOid": "0513ae0"
+          },
+          "author": "martinthomson",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "COMMENTED",
+          "body": "The middlebox could also support ECH, right? It would need a way to get a config, and probably would need to be involved in feeding a config too the client, but it is at least possible for interception to consume and use ECH.\r\n\r\nMaybe qualify with \"unless the middlebox understands ECH and is able to interpret the extension (which likely means being involved in providing the client with an ECHConfig)...\"",
+          "createdAt": "2021-07-15T23:17:00Z",
+          "updatedAt": "2021-07-15T23:17:00Z",
+          "comments": []
+        }
+      ]
     }
   ]
 }
