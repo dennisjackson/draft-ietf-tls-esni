@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2021-07-18T00:54:50.557235+00:00",
+  "timestamp": "2021-07-20T00:57:03.343772+00:00",
   "repo": "tlswg/draft-ietf-tls-esni",
   "labels": [
     {
@@ -40737,7 +40737,7 @@
       "labels": [],
       "body": "But that is just how it is.  We get to choose between that leakage and a\r\nknown large amount of bustage.\r\n\r\nCloses #358.",
       "createdAt": "2021-04-06T02:05:45Z",
-      "updatedAt": "2021-04-13T19:54:50Z",
+      "updatedAt": "2021-07-19T19:07:36Z",
       "baseRepository": "tlswg/draft-ietf-tls-esni",
       "baseRefName": "master",
       "baseRefOid": "95a3fb44cc7703ab33ef11a9781f51962f3d0e0b",
@@ -40784,6 +40784,39 @@
           "createdAt": "2021-04-13T18:57:36Z",
           "updatedAt": "2021-04-13T18:57:36Z",
           "comments": []
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzA5ODE1OTY2",
+          "commit": {
+            "abbreviatedOid": "2b3ea14"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2021-07-19T17:40:00Z",
+          "updatedAt": "2021-07-19T17:40:00Z",
+          "comments": []
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzA5ODg3MDM1",
+          "commit": {
+            "abbreviatedOid": "2b3ea14"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-07-19T19:07:36Z",
+          "updatedAt": "2021-07-19T19:07:36Z",
+          "comments": [
+            {
+              "originalPosition": 16,
+              "body": "```suggestion\r\nHelloRetryRequest. \r\n```",
+              "createdAt": "2021-07-19T19:07:36Z",
+              "updatedAt": "2021-07-19T19:07:36Z"
+            }
+          ]
         }
       ]
     },
@@ -47029,7 +47062,7 @@
       "labels": [],
       "body": "Closes #474. This makes a few changes to the middlebox section:\r\n\r\nFirst, using \"MITM proxies\" when RFC8446 talks about terminating TLS was\r\nconfusing, so align with the RFC8446 terminology.\r\n\r\nNext, RFC8446 does not quite require dropping unknown extensions, only\r\ngenerating your own ClientHello. Dropping unknown extensions happens if\r\nthe proxy tries to intersect its true capabilities with that of the\r\nclient. I've also dropped the \"a more serious problem\" introduction\r\nsince the point of this section is that it's not a serious problem.\r\n\r\nFinally, I've dropped the \"non-conformant MITM proxy\" paragraph. It's\r\nslightly out of date now that we've unified everything around trial\r\ndecryption. I believe, depending on what the proxy does with the\r\nserver's EncryptedExtensions response, things will either break, work on\r\naccident, or retry loop and hit the limit. It doesn't seem worth\r\nexpending a whole lot of text on something that is the proxy's fault.\r\n\r\nThis does drop the \"Clients SHOULD NOT attempt to repair the connection\r\nin this case\" line, but the client couldn't really detect this case\r\nanyway. It looks like any old connection failure without a proxy, and\r\nthe usual considerations for changing your TLS config on connection\r\nfailure apply.",
       "createdAt": "2021-07-15T16:28:52Z",
-      "updatedAt": "2021-07-16T15:36:57Z",
+      "updatedAt": "2021-07-19T23:36:24Z",
       "baseRepository": "tlswg/draft-ietf-tls-esni",
       "baseRefName": "master",
       "baseRefOid": "57b9e22624f1c7401cec35bb7ffed9ee93bb7041",
@@ -47061,6 +47094,19 @@
           "body": "The middlebox could also support ECH, right? It would need a way to get a config, and probably would need to be involved in feeding a config too the client, but it is at least possible for interception to consume and use ECH.\r\n\r\nMaybe qualify with \"unless the middlebox understands ECH and is able to interpret the extension (which likely means being involved in providing the client with an ECHConfig)...\"",
           "createdAt": "2021-07-15T23:17:00Z",
           "updatedAt": "2021-07-15T23:17:00Z",
+          "comments": []
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzEwMDY1NDg4",
+          "commit": {
+            "abbreviatedOid": "fd6ca03"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2021-07-19T23:36:24Z",
+          "updatedAt": "2021-07-19T23:36:24Z",
           "comments": []
         }
       ]
