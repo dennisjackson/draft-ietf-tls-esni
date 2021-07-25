@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2021-07-20T00:57:03.343772+00:00",
+  "timestamp": "2021-07-25T00:54:37.153225+00:00",
   "repo": "tlswg/draft-ietf-tls-esni",
   "labels": [
     {
@@ -11101,6 +11101,44 @@
           "body": "Looks good to me! Thank you for taking the time to look at this.\n\nOn Thu, 15 Jul 2021, 18:29 David Benjamin, ***@***.***> wrote:\n\n> How does #475 <https://github.com/tlswg/draft-ietf-tls-esni/pull/475>\n> look?\n>\n> \u2014\n> You are receiving this because you authored the thread.\n> Reply to this email directly, view it on GitHub\n> <https://github.com/tlswg/draft-ietf-tls-esni/issues/474#issuecomment-880842255>,\n> or unsubscribe\n> <https://github.com/notifications/unsubscribe-auth/ACE3QJM22SXAMILF4TG5C5TTX4EGHANCNFSM5ALCNE2Q>\n> .\n>\n",
           "createdAt": "2021-07-15T21:30:47Z",
           "updatedAt": "2021-07-15T21:30:47Z"
+        }
+      ]
+    },
+    {
+      "number": 476,
+      "id": "MDU6SXNzdWU5NTAyMzU2OTQ=",
+      "title": "Feature Request: `ECHConfigList.permit_plaintext`",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/issues/476",
+      "state": "OPEN",
+      "author": "bemasc",
+      "authorAssociation": "CONTRIBUTOR",
+      "assignees": [],
+      "labels": [],
+      "body": "@davidben \r\n\r\nCurrently, if all the `ECHConfig`s in the `ECHConfigList` are rejected by the client, the client always falls back to sending the ClientHello in plaintext.  This is normally appropriate, but it may not always be.  Once ECH is well-established, secretive servers may prefer for clients to fail the connection rather than revealing the server's SNI by connecting without ECH, especially if the server only accepts ECH ClientHellos.\r\n\r\nUnfortunately, an `ECHConfig` extension cannot be used to express this preference, because extensions are scoped to a specific `ECHConfig`, and we are discussing the case where all `ECHConfig`s have been rejected.\r\n\r\nA boolean field in `ECHConfigList` (e.g. `permit_plaintext`, `ech_only`) would be sufficient to encode this instruction.",
+      "createdAt": "2021-07-22T01:59:52Z",
+      "updatedAt": "2021-07-22T10:02:40Z",
+      "closedAt": null,
+      "comments": [
+        {
+          "author": "martinthomson",
+          "authorAssociation": "CONTRIBUTOR",
+          "body": "Is this better as an ECH extension, or as a separate SVCB extension (for example)?  That would allow the assertion to apply more broadly.  If you could put that on an AliasMode record, that might have interesting applications.",
+          "createdAt": "2021-07-22T04:09:34Z",
+          "updatedAt": "2021-07-22T04:09:34Z"
+        },
+        {
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "body": "I think this is something we should defer. As @martinthomson says, we can still do this as a SVCB extension if needed. I expect we can also manage an `ECHConfig` extension by tweaking the `ECHConfigList` rules slightly, even if it's a bit janky.\r\n\r\nIndeed, the case where all `ECHConfig`s are rejected is another reason to defer it. Every draft protocol is doomed to die, which means that no server can, right now, produce a stable ECH deployment. They are guaranteed that some future ECH-capable clients will reject their `ECHConfigList`.\r\n\r\nAnd from the client's perspective, I would be very uncomfortable implementing this mechanism before we understand a bit better how ECH works in practice. How likely are rollbacks? How stale of DNS do we see in practice? How much of a concern are users who switch back and forth from a TLS-terminating middlebox, with all the problems that comes with?\r\n\r\nFinally, is changing the outer `ECHConfigList` structure even an option at this point? Didn't you all have a lot of troubles with renaming the SvcParam, and that didn't even affect the wire format? Changing `ECHConfigList` would _actually_ be a wire-format change. (If changing that is on the table, I kinda regret the two-byte length prefix in front...)",
+          "createdAt": "2021-07-22T06:35:28Z",
+          "updatedAt": "2021-07-22T06:36:24Z"
+        },
+        {
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "body": "\n\nOn 22/07/2021 07:35, David Benjamin wrote:\n> I think this is something we should defer.\n\n+1\n\nI wonder would it be useful to see if the TLS WG\nhad consensus on something like \"no more changes\nfor ECH for now, (except security fixes if needed)\"\nmaybe with an additional \"the WG will revisit ECH\na year or so after publication-requested to see\nwhat changes based on deployment experience might\nbe good\"\n\nS.\n\n",
+          "createdAt": "2021-07-22T10:02:40Z",
+          "updatedAt": "2021-07-22T10:02:40Z"
         }
       ]
     }
@@ -47110,6 +47148,58 @@
           "comments": []
         }
       ]
+    },
+    {
+      "number": 477,
+      "id": "MDExOlB1bGxSZXF1ZXN0Njk2MjM0ODY1",
+      "title": "Trim the introduction section",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/477",
+      "state": "OPEN",
+      "author": "davidben",
+      "authorAssociation": "CONTRIBUTOR",
+      "assignees": [],
+      "labels": [],
+      "body": "It is rather long. I've taken a pass at making it read a little clearer,\r\nhopefully. I've tried to preserve the bits of the old text that seemed\r\nimportant. Hopefully other folks agree. This still could use another\r\nediting pass (e.g. the first and second paragraphs both conclude\r\nwith the same thing), but I think it's an improvement.\r\n\r\nI've dropped the paragraph about about how the TLSWG has studied the\r\nproblem but had difficulties. That seemed more relevant when we were\r\ncomparing this approach against others.\r\n\r\nThe following paragraph then describes the setup (colocated servers) and\r\nwhat the extension achieves (stuff about anonymity sets). Thats\r\nredundant with the text above talking about how sometimes the server\r\nIP isn't identifying, and the text below talking about what the\r\nextension does. I've worked that text into those two paragraphs.\r\n\r\nI tweaked the bit about consistent TLS configuration, since it's not\r\nactually true: it's fine if the servers don't support the same ALPN\r\nprotocols. It's just a few externally-visible bits of TLS configuration.\r\nThat's probably worth defining more accurately, if we haven't already (I\r\nforget), but not in the introduction.\r\n\r\nI've also dropped the claim that we leak no more than the server IP. We\r\nhaven't addressed padding of application data, and cases where the\r\ncolocated servers have sufficiently different TLS configuration are out\r\nof scope.\r\n\r\nI tried to general tightened up language. For instance there was a paragraph\r\nthat says \"(assuming the server does not use domain-based virtual\r\nhosting)\" and then goes straight to talk about servers that *do* use\r\nvirtual hosting.",
+      "createdAt": "2021-07-23T22:12:09Z",
+      "updatedAt": "2021-07-23T22:12:09Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "57b9e22624f1c7401cec35bb7ffed9ee93bb7041",
+      "headRepository": "davidben/draft-ietf-tls-esni",
+      "headRefName": "trim-intro",
+      "headRefOid": "a369dea77bee2bfd6d4dadb6b2eeedce2ea8fa82",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [],
+      "reviews": []
+    },
+    {
+      "number": 478,
+      "id": "MDExOlB1bGxSZXF1ZXN0Njk2MjQ0NTIz",
+      "title": "Rephrase the overview",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/478",
+      "state": "OPEN",
+      "author": "davidben",
+      "authorAssociation": "CONTRIBUTOR",
+      "assignees": [],
+      "labels": [],
+      "body": "The overview was a bit long, and slightly inaccurate. The\r\nClientHelloInner is encrypted after (most) of the ClientHelloOuter is\r\nconstructed. I've also merged the ECH-naive server case with the ECH\r\nrejection case. This is more consistent with the client text, and most\r\nother TLS extensions, where we do not distinguish between reasons why\r\nthe extension could not be negotiated.\r\n\r\nI've also generally tightened up the wording to make it shorter. As part\r\nof that, I'm trimmed the repeated list of sensitive ClientHello\r\nextensions. ECH itself is (mostly) agnostic to which extensions you\r\nbelieve are sensitive, and we already gave examples in the introduction.",
+      "createdAt": "2021-07-23T22:47:10Z",
+      "updatedAt": "2021-07-23T22:47:10Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "57b9e22624f1c7401cec35bb7ffed9ee93bb7041",
+      "headRepository": "davidben/draft-ietf-tls-esni",
+      "headRefName": "trim-overview",
+      "headRefOid": "2bf663bc0713354d8b654c55008e80a86b2c3b10",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [],
+      "reviews": []
     }
   ]
 }
