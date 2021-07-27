@@ -5,11 +5,11 @@
 tls                                                          E. Rescorla
 Internet-Draft                                                RTFM, Inc.
 Intended status: Standards Track                                  K. Oku
-Expires: 27 January 2022                                          Fastly
+Expires: 28 January 2022                                          Fastly
                                                              N. Sullivan
                                                                C.A. Wood
                                                               Cloudflare
-                                                            26 July 2021
+                                                            27 July 2021
 
 
                        TLS Encrypted Client Hello
@@ -43,7 +43,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 27 January 2022.
+   This Internet-Draft will expire on 28 January 2022.
 
 Copyright Notice
 
@@ -145,44 +145,27 @@ Table of Contents
    perhaps the most sensitive, unencrypted information in TLS 1.3.
 
    The target domain may also be visible through other channels, such as
-   plaintext client DNS queries, visible server IP addresses (assuming
-   the server does not use domain-based virtual hosting), or other
-   indirect mechanisms such as traffic analysis.  DoH [RFC8484] and
-   DPRIVE [RFC7858] [RFC8094] provide mechanisms for clients to conceal
-   DNS lookups from network inspection, and many TLS servers host
-   multiple domains on the same IP address.  In such environments, the
-   SNI remains the primary explicit signal used to determine the
-   server's identity.
-
-   The TLS Working Group has studied the problem of protecting the SNI,
-   but has been unable to develop a completely generic solution.
-   [RFC8744] provides a description of the problem space and some of the
-   proposed techniques.  One of the more difficult problems is "Do not
-   stick out" ([RFC8744], Section 3.4): if only sensitive or private
-   services use SNI encryption, then SNI encryption is a signal that a
-   client is going to such a service.  For this reason, much recent work
-   has focused on concealing the fact that the SNI is being protected.
-   Unfortunately, the result often has undesirable performance
-   consequences, incomplete coverage, or both.
-
-   The protocol specified by this document takes a different approach.
-   It assumes that private origins will co-locate with or hide behind a
-   provider (reverse proxy, application server, etc.) that protects
-   sensitive ClientHello parameters, including the SNI, for all of the
-   domains it hosts.  These co-located servers form an anonymity set
-   wherein all elements have a consistent configuration, e.g., the set
-   of supported application protocols, ciphersuites, TLS versions, and
-   so on.  Usage of this mechanism reveals that a client is connecting
-   to a particular service provider, but does not reveal which server
-   from the anonymity set terminates the connection.  Thus, it leaks no
-   more than what is already visible from the server IP address.
+   plaintext client DNS queries or visible server IP addresses.
+   However, DoH [RFC8484] and DPRIVE [RFC7858] [RFC8094] provide
+   mechanisms for clients to conceal DNS lookups from network
+   inspection, and many TLS servers host multiple domains on the same IP
+   address.  Private origins may also be deployed behind a common
+   provider, such as a reverse proxy.  In such environments, the SNI
+   remains the primary explicit signal used to determine the server's
+   identity.
 
    This document specifies a new TLS extension, called Encrypted Client
-   Hello (ECH), that allows clients to encrypt their ClientHello to a
-   supporting server.  This protects the SNI and other potentially
-   sensitive fields, such as the ALPN list [RFC7301].  This extension is
-   only supported with (D)TLS 1.3 [RFC8446] and newer versions of the
-   protocol.
+   Hello (ECH), that allows clients to encrypt their ClientHello to such
+   a deployment.  This protects the SNI and other potentially sensitive
+   fields, such as the ALPN list [RFC7301].  Co-located servers with
+   consistent externally visible TLS configurations, including supported
+   versions and cipher suites, form an anonymity set.  Usage of this
+   mechanism reveals that a client is connecting to a particular service
+   provider, but does not reveal which server from the anonymity set
+   terminates the connection.
+
+   ECH is only supported with (D)TLS 1.3 [RFC8446] and newer versions of
+   the protocol.
 
 2.  Conventions and Definitions
 
@@ -243,49 +226,39 @@ Table of Contents
 
 3.2.  Encrypted ClientHello (ECH)
 
-   ECH allows the client to encrypt sensitive ClientHello extensions,
-   e.g., SNI, ALPN, etc., under the public key of the client-facing
-   server.  This requires the client-facing server to publish the public
-   key and metadata it uses for ECH for all the domains for which it
-   serves directly or indirectly (via Split Mode).  This document
-   defines the format of the ECH encryption public key and metadata,
-   referred to as an ECH configuration, and delegates DNS publication
-   details to [HTTPS-RR], though other delivery mechanisms are possible.
-   In particular, if some of the clients of a private server are
-   applications rather than Web browsers, those applications might have
-   the public key and metadata preconfigured.
+   A client-facing server enables ECH by publishing an ECH
+   configuration, which is an encryption public key and associated
+   metadata.  The server must publish this for all the domains it serves
+   via Shared or Split Mode.  This document defines the ECH
+   configuration's format, but delegates DNS publication details to
+   [HTTPS-RR].  Other delivery mechanisms are also possible.  For
+   example, the client may have the ECH configuration preconfigured.
 
-   When a client wants to establish a TLS session with the backend
-   server, it constructs its ClientHello as indicated in Section 6.1.
-   We will refer to this as the ClientHelloInner message.  The client
-   encrypts this message using the public key of the ECH configuration.
-   It then constructs a new ClientHello, the ClientHelloOuter, with
-   innocuous values for sensitive extensions, e.g., SNI, ALPN, etc., and
-   with an "encrypted_client_hello" extension, which this document
-   defines (Section 5).  The extension's payload carries the encrypted
-   ClientHelloInner and specifies the ECH configuration used for
-   encryption.  Finally, it sends ClientHelloOuter to the server.
+   When a client wants to establish a TLS session with some backend
+   server, it constructs a private ClientHello, referred to as the
+   ClientHelloInner.  The client then constructs a public ClientHello,
+   referred to as the ClientHelloOuter.  The ClientHelloOuter contains
+   innocuous values for sensitive extensions and an
+   "encrypted_client_hello" extension (Section 5), which carries the
+   encrypted ClientHelloInner.  Finally, the client sends
+   ClientHelloOuter to the server.
 
-   Upon receiving the ClientHelloOuter, a TLS server takes one of the
-   following actions:
+   The server takes one of the following actions:
 
-   1.  If it does not support ECH, it ignores the
-       "encrypted_client_hello" extension and proceeds with the
-       handshake as usual, per [RFC8446], Section 4.1.2.
+   1.  If it does not support ECH or cannot decrypt the extension, it
+       completes the handshake with ClientHelloOuter.  This is referred
+       to as rejecting ECH.
 
-   2.  If it is a client-facing server for the ECH protocol, but cannot
-       decrypt the extension, then it terminates the handshake using the
-       ClientHelloOuter.  This is referred to as "ECH rejection".  When
-       ECH is rejected, the client-facing server sends an acceptable ECH
-       configuration in its EncryptedExtensions message.
-
-   3.  If it supports ECH and decrypts the extension, it forwards the
-       ClientHelloInner to the backend server, who terminates the
-       connection.  This is referred to as "ECH acceptance".
+   2.  If it successfully decrypts the extension, it forwards the
+       ClientHelloInner to the backend server, which completes the
+       handshake.  This is referred to as accepting ECH.
 
    Upon receiving the server's response, the client determines whether
-   or not ECH was accepted and proceeds with the handshake accordingly.
-   (See Section 6 for details.)
+   or not ECH was accepted (Section 6.1.4) and proceeds with the
+   handshake accordingly.  When ECH is rejected, the resulting
+   connection is not usable by the client for application data.
+   Instead, ECH rejection allows the client to retry with up-to-date
+   configuration (Section 6.1.4.2).
 
    The primary goal of ECH is to ensure that connections to servers in
    the same anonymity set are indistinguishable from one another.
@@ -1015,7 +988,7 @@ Table of Contents
    extension and MUST NOT use the retry keys.
 
    Offering a GREASE extension is not considered offering an encrypted
-   ClientHello for purposes of requirements in Section 6.  In
+   ClientHello for purposes of requirements in Section 6.1.  In
    particular, the client MAY offer to resume sessions established
    without ECH.
 
