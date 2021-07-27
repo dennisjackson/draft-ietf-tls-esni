@@ -337,7 +337,7 @@ Table of Contents
 
    public_name  The DNS name of the client-facing server, i.e., the
       entity trusted to update the ECH configuration.  This is used to
-      correct misconfigured clients, as described in Section 6.1.4.
+      correct misconfigured clients, as described in Section 6.1.4.2.
 
       Clients MUST ignore any "ECHConfig" structure whose public_name is
       not parsable as a dot-separated sequence of LDH labels, as defined
@@ -921,8 +921,8 @@ Table of Contents
    report such connections as successful to the application.  It
    additionally MUST ignore all session tickets and session IDs
    presented by the server.  These connections are only used to trigger
-   retries, as described in Section 6.1.4.  This may be implemented, for
-   instance, by reporting a failed connection with a dedicated error
+   retries, as described in Section 6.1.4.2.  This may be implemented,
+   for instance, by reporting a failed connection with a dedicated error
    code.
 
 6.1.5.  Handling HelloRetryRequest
@@ -1227,7 +1227,7 @@ Table of Contents
    all, it will ignore it as required by Section 4.1.2 of [RFC8446].
    Provided the server can present a certificate valid for the public
    name, the client can safely retry with updated settings, as described
-   in Section 6.1.4.
+   in Section 6.1.4.2.
 
    Unless ECH is disabled as a result of successfully establishing a
    connection to the public name, the client MUST NOT fall back to using
@@ -1249,9 +1249,9 @@ Table of Contents
 
    Depending on whether the client is configured to accept the proxy's
    certificate as authoritative for the public name, this may trigger
-   the retry logic described in Section 6.1.4 or result in a connection
-   failure.  A proxy which is not authoritative for the public name
-   cannot forge a signal to disable ECH.
+   the retry logic described in Section 6.1.4.2 or result in a
+   connection failure.  A proxy which is not authoritative for the
+   public name cannot forge a signal to disable ECH.
 
 9.  Compliance Requirements
 
