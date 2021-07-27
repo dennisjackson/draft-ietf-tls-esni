@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2021-07-25T00:54:37.153225+00:00",
+  "timestamp": "2021-07-27T00:54:49.442056+00:00",
   "repo": "tlswg/draft-ietf-tls-esni",
   "labels": [
     {
@@ -11064,15 +11064,15 @@
       "id": "MDU6SXNzdWU5NDQyMzUzMTE=",
       "title": "Clarification of section 8.2. Middleboxes",
       "url": "https://github.com/tlswg/draft-ietf-tls-esni/issues/474",
-      "state": "OPEN",
+      "state": "CLOSED",
       "author": "mosterdt",
       "authorAssociation": "NONE",
       "assignees": [],
       "labels": [],
       "body": "Hello,\r\n\r\nWhile reading this specification, section 8.2. states that \"MITM proxies\" are required to remove any extensions they do not understand. \r\n\r\n> A more serious problem is MITM proxies which do not support this\r\n   extension.  [RFC8446], Section 9.3 requires that such proxies remove\r\n   any extensions they do not understand.  The handshake will then\r\n   present a certificate based on the public name, without echoing the\r\n   \"encrypted_client_hello\" extension to the client.\r\n\r\nHowever, looking at RFC 8446 Section 9.3, the first section you encounter on forwarding middleboxes explicitly states the opposite: the middlebox is not allowed to change or modify any parameters in the handshake and subsequent traffic if it doesn't understand some parameter in the ClientHello:\r\n\r\n> A middlebox which forwards ClientHello parameters it does not\r\n   understand MUST NOT process any messages beyond that ClientHello.\r\n   It MUST forward all subsequent traffic unmodified.  Otherwise, it\r\n   may fail to interoperate with newer clients and servers.\r\n\r\nReading further, we find the bullet point the warning in section 8.2 refers to:\r\n\r\n> A middlebox which terminates a TLS connection MUST behave as a\r\n   compliant TLS server (to the original client), including having a\r\n   certificate which the client is willing to accept, and also as a\r\n   compliant TLS client (to the original server), including verifying\r\n   the original server's certificate.  In particular, it MUST\r\n   generate its own ClientHello containing only parameters it\r\n   understands, and it MUST generate a fresh ServerHello random\r\n   value, rather than forwarding the endpoint's value.\r\n\r\nHere, the middlebox isn't so much required to \"remove any extension they do not understand\", but to \"generate its own ClientHello containing only parameters it understands\". After carefully reading over these sections multiple times, I do get the message, but I feel like it could be better worded as not to create confusion. The words \"MITM proxy\" could refer to the forwarding middlebox as well. Changing the wording in, for example, the following way makes the reference more clear in my opinion:\r\n\r\n> A more serious problem is MITM proxies which do not support this\r\nextension.  [RFC8446], Section 9.3 requires that such proxies generate\r\ntheir own ClientHello containing only parameters they understand. The\r\nmiddlebox will then present a certificate based on the public name to\r\nthe client, without echoing the \"encrypted_client_hello\" extension.\r\n\r\nWhat do you think about this?",
       "createdAt": "2021-07-14T09:34:15Z",
-      "updatedAt": "2021-07-15T21:30:48Z",
-      "closedAt": null,
+      "updatedAt": "2021-07-26T21:02:04Z",
+      "closedAt": "2021-07-26T21:02:04Z",
       "comments": [
         {
           "author": "davidben",
@@ -47093,24 +47093,26 @@
       "id": "MDExOlB1bGxSZXF1ZXN0NjkwODc0MjYx",
       "title": "Revise middlebox section.",
       "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/475",
-      "state": "OPEN",
+      "state": "MERGED",
       "author": "davidben",
       "authorAssociation": "CONTRIBUTOR",
       "assignees": [],
       "labels": [],
       "body": "Closes #474. This makes a few changes to the middlebox section:\r\n\r\nFirst, using \"MITM proxies\" when RFC8446 talks about terminating TLS was\r\nconfusing, so align with the RFC8446 terminology.\r\n\r\nNext, RFC8446 does not quite require dropping unknown extensions, only\r\ngenerating your own ClientHello. Dropping unknown extensions happens if\r\nthe proxy tries to intersect its true capabilities with that of the\r\nclient. I've also dropped the \"a more serious problem\" introduction\r\nsince the point of this section is that it's not a serious problem.\r\n\r\nFinally, I've dropped the \"non-conformant MITM proxy\" paragraph. It's\r\nslightly out of date now that we've unified everything around trial\r\ndecryption. I believe, depending on what the proxy does with the\r\nserver's EncryptedExtensions response, things will either break, work on\r\naccident, or retry loop and hit the limit. It doesn't seem worth\r\nexpending a whole lot of text on something that is the proxy's fault.\r\n\r\nThis does drop the \"Clients SHOULD NOT attempt to repair the connection\r\nin this case\" line, but the client couldn't really detect this case\r\nanyway. It looks like any old connection failure without a proxy, and\r\nthe usual considerations for changing your TLS config on connection\r\nfailure apply.",
       "createdAt": "2021-07-15T16:28:52Z",
-      "updatedAt": "2021-07-19T23:36:24Z",
+      "updatedAt": "2021-07-26T21:02:04Z",
       "baseRepository": "tlswg/draft-ietf-tls-esni",
       "baseRefName": "master",
       "baseRefOid": "57b9e22624f1c7401cec35bb7ffed9ee93bb7041",
       "headRepository": "davidben/draft-ietf-tls-esni",
       "headRefName": "revise-middlebox",
       "headRefOid": "fd6ca03279008075e9cf94d16cad4887913925c5",
-      "closedAt": null,
-      "mergedAt": null,
-      "mergedBy": null,
-      "mergeCommit": null,
+      "closedAt": "2021-07-26T21:02:04Z",
+      "mergedAt": "2021-07-26T21:02:04Z",
+      "mergedBy": "chris-wood",
+      "mergeCommit": {
+        "oid": "848eee77ba3edd292940a5c03792c07d589be43d"
+      },
       "comments": [
         {
           "author": "davidben",
