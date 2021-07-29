@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2021-07-27T00:54:49.442056+00:00",
+  "timestamp": "2021-07-29T00:51:58.918524+00:00",
   "repo": "tlswg/draft-ietf-tls-esni",
   "labels": [
     {
@@ -47156,52 +47156,212 @@
       "id": "MDExOlB1bGxSZXF1ZXN0Njk2MjM0ODY1",
       "title": "Trim the introduction section",
       "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/477",
-      "state": "OPEN",
+      "state": "MERGED",
       "author": "davidben",
       "authorAssociation": "CONTRIBUTOR",
       "assignees": [],
       "labels": [],
       "body": "It is rather long. I've taken a pass at making it read a little clearer,\r\nhopefully. I've tried to preserve the bits of the old text that seemed\r\nimportant. Hopefully other folks agree. This still could use another\r\nediting pass (e.g. the first and second paragraphs both conclude\r\nwith the same thing), but I think it's an improvement.\r\n\r\nI've dropped the paragraph about about how the TLSWG has studied the\r\nproblem but had difficulties. That seemed more relevant when we were\r\ncomparing this approach against others.\r\n\r\nThe following paragraph then describes the setup (colocated servers) and\r\nwhat the extension achieves (stuff about anonymity sets). Thats\r\nredundant with the text above talking about how sometimes the server\r\nIP isn't identifying, and the text below talking about what the\r\nextension does. I've worked that text into those two paragraphs.\r\n\r\nI tweaked the bit about consistent TLS configuration, since it's not\r\nactually true: it's fine if the servers don't support the same ALPN\r\nprotocols. It's just a few externally-visible bits of TLS configuration.\r\nThat's probably worth defining more accurately, if we haven't already (I\r\nforget), but not in the introduction.\r\n\r\nI've also dropped the claim that we leak no more than the server IP. We\r\nhaven't addressed padding of application data, and cases where the\r\ncolocated servers have sufficiently different TLS configuration are out\r\nof scope.\r\n\r\nI tried to general tightened up language. For instance there was a paragraph\r\nthat says \"(assuming the server does not use domain-based virtual\r\nhosting)\" and then goes straight to talk about servers that *do* use\r\nvirtual hosting.",
       "createdAt": "2021-07-23T22:12:09Z",
-      "updatedAt": "2021-07-23T22:12:09Z",
+      "updatedAt": "2021-07-27T20:17:22Z",
       "baseRepository": "tlswg/draft-ietf-tls-esni",
       "baseRefName": "master",
       "baseRefOid": "57b9e22624f1c7401cec35bb7ffed9ee93bb7041",
       "headRepository": "davidben/draft-ietf-tls-esni",
       "headRefName": "trim-intro",
-      "headRefOid": "a369dea77bee2bfd6d4dadb6b2eeedce2ea8fa82",
-      "closedAt": null,
-      "mergedAt": null,
-      "mergedBy": null,
-      "mergeCommit": null,
+      "headRefOid": "06592fac0f6ac564803a85e78d5b6580186f837a",
+      "closedAt": "2021-07-27T20:17:22Z",
+      "mergedAt": "2021-07-27T20:17:22Z",
+      "mergedBy": "chris-wood",
+      "mergeCommit": {
+        "oid": "6a2b1c4cd43e62fa6f88370e2aa535ae55b8431a"
+      },
       "comments": [],
-      "reviews": []
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzE2MzM3MTM1",
+          "commit": {
+            "abbreviatedOid": "a369dea"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2021-07-27T20:15:06Z",
+          "updatedAt": "2021-07-27T20:16:40Z",
+          "comments": [
+            {
+              "originalPosition": 47,
+              "body": "```suggestion\r\nconfigurations, including supported versions and cipher suites, form an anonymity set. Usage of\r\n```",
+              "createdAt": "2021-07-27T20:15:06Z",
+              "updatedAt": "2021-07-27T20:17:02Z"
+            }
+          ]
+        }
+      ]
     },
     {
       "number": 478,
       "id": "MDExOlB1bGxSZXF1ZXN0Njk2MjQ0NTIz",
       "title": "Rephrase the overview",
       "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/478",
-      "state": "OPEN",
+      "state": "MERGED",
       "author": "davidben",
       "authorAssociation": "CONTRIBUTOR",
       "assignees": [],
       "labels": [],
       "body": "The overview was a bit long, and slightly inaccurate. The\r\nClientHelloInner is encrypted after (most) of the ClientHelloOuter is\r\nconstructed. I've also merged the ECH-naive server case with the ECH\r\nrejection case. This is more consistent with the client text, and most\r\nother TLS extensions, where we do not distinguish between reasons why\r\nthe extension could not be negotiated.\r\n\r\nI've also generally tightened up the wording to make it shorter. As part\r\nof that, I'm trimmed the repeated list of sensitive ClientHello\r\nextensions. ECH itself is (mostly) agnostic to which extensions you\r\nbelieve are sensitive, and we already gave examples in the introduction.",
       "createdAt": "2021-07-23T22:47:10Z",
-      "updatedAt": "2021-07-23T22:47:10Z",
+      "updatedAt": "2021-07-27T20:51:57Z",
       "baseRepository": "tlswg/draft-ietf-tls-esni",
       "baseRefName": "master",
-      "baseRefOid": "57b9e22624f1c7401cec35bb7ffed9ee93bb7041",
+      "baseRefOid": "6a2b1c4cd43e62fa6f88370e2aa535ae55b8431a",
       "headRepository": "davidben/draft-ietf-tls-esni",
       "headRefName": "trim-overview",
-      "headRefOid": "2bf663bc0713354d8b654c55008e80a86b2c3b10",
-      "closedAt": null,
-      "mergedAt": null,
-      "mergedBy": null,
-      "mergeCommit": null,
+      "headRefOid": "5ef6f65b7598dbe3a8d1c7f016178c99ed5fd094",
+      "closedAt": "2021-07-27T20:51:57Z",
+      "mergedAt": "2021-07-27T20:51:57Z",
+      "mergedBy": "chris-wood",
+      "mergeCommit": {
+        "oid": "a4364eb205e9a499211b6395125f95831b3782ba"
+      },
       "comments": [],
-      "reviews": []
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzE2MzQwMzU0",
+          "commit": {
+            "abbreviatedOid": "2bf663b"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "APPROVED",
+          "body": "This is very clean :-) Nice work!",
+          "createdAt": "2021-07-27T20:19:06Z",
+          "updatedAt": "2021-07-27T20:23:59Z",
+          "comments": [
+            {
+              "originalPosition": 40,
+              "body": "```suggestion\r\nthis for all the domains it serves directly or indirectly via Shared or Split Mode, respectively.\r\n```",
+              "createdAt": "2021-07-27T20:19:06Z",
+              "updatedAt": "2021-07-27T20:23:59Z"
+            },
+            {
+              "originalPosition": 47,
+              "body": "```suggestion\r\nconstructs a private ClientHello, referred to as the ClientHelloInner.\r\n```",
+              "createdAt": "2021-07-27T20:20:02Z",
+              "updatedAt": "2021-07-27T20:23:59Z"
+            },
+            {
+              "originalPosition": 68,
+              "body": "```suggestion\r\naccordingly. When ECH is rejected, the resulting connection is not usable by\r\nthe client for application data. Instead, ECH rejection allows the client to\r\nretry with up-to-date configuration ({{rejected-ech}}).\r\n```",
+              "createdAt": "2021-07-27T20:23:01Z",
+              "updatedAt": "2021-07-27T20:23:59Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzE2MzQ2NTIy",
+          "commit": {
+            "abbreviatedOid": "2bf663b"
+          },
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-07-27T20:26:34Z",
+          "updatedAt": "2021-07-27T20:26:34Z",
+          "comments": [
+            {
+              "originalPosition": 40,
+              "body": "Oh, I got this from the earlier version of the text. I wonder whether both OR clauses are even necessary. WDYT about:\r\n\r\n> for all the domains it serves via Shared or Split Mode.",
+              "createdAt": "2021-07-27T20:26:34Z",
+              "updatedAt": "2021-07-27T20:26:34Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzE2MzY1MDcz",
+          "commit": {
+            "abbreviatedOid": "5ef6f65"
+          },
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-07-27T20:49:15Z",
+          "updatedAt": "2021-07-27T20:49:16Z",
+          "comments": [
+            {
+              "originalPosition": 40,
+              "body": "Applied that version and rebased.",
+              "createdAt": "2021-07-27T20:49:16Z",
+              "updatedAt": "2021-07-27T20:49:16Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzE2MzY1NjI4",
+          "commit": {
+            "abbreviatedOid": "5ef6f65"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-07-27T20:49:54Z",
+          "updatedAt": "2021-07-27T20:49:54Z",
+          "comments": [
+            {
+              "originalPosition": 40,
+              "body": "Lovely :-) thanks!",
+              "createdAt": "2021-07-27T20:49:54Z",
+              "updatedAt": "2021-07-27T20:49:54Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 479,
+      "id": "MDExOlB1bGxSZXF1ZXN0Njk4MTkwNzUz",
+      "title": "Cite the correct section for the retry flow.",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/479",
+      "state": "MERGED",
+      "author": "davidben",
+      "authorAssociation": "CONTRIBUTOR",
+      "assignees": [],
+      "labels": [],
+      "body": "Handling server response discusses how to dispatch between accept/reject, but the retry flow is specifically the reject bit.",
+      "createdAt": "2021-07-27T21:10:21Z",
+      "updatedAt": "2021-07-27T22:15:35Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "2a661f72c545a16249e4b2b83fc1412eb44439b5",
+      "headRepository": "davidben/draft-ietf-tls-esni",
+      "headRefName": "fix-citations",
+      "headRefOid": "ad870fedfabee681bd7ced7bc9ccadd1d08779f6",
+      "closedAt": "2021-07-27T22:15:35Z",
+      "mergedAt": "2021-07-27T22:15:35Z",
+      "mergedBy": "chris-wood",
+      "mergeCommit": {
+        "oid": "8b099c334470ffa185d7ec28f09235f705c42342"
+      },
+      "comments": [],
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzE2NDI0MjQ4",
+          "commit": {
+            "abbreviatedOid": "ad870fe"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2021-07-27T22:15:30Z",
+          "updatedAt": "2021-07-27T22:15:30Z",
+          "comments": []
+        }
+      ]
     }
   ]
 }
