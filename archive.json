@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2021-07-29T00:51:58.918524+00:00",
+  "timestamp": "2021-08-01T01:00:31.757466+00:00",
   "repo": "tlswg/draft-ietf-tls-esni",
   "labels": [
     {
@@ -47067,21 +47067,21 @@
       "id": "MDExOlB1bGxSZXF1ZXN0Njg5MjE1OTgx",
       "title": "Use the encrypted_client_hello extension to signal acceptance in SH and HRR",
       "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/473",
-      "state": "OPEN",
+      "state": "CLOSED",
       "author": "chris-wood",
       "authorAssociation": "COLLABORATOR",
       "assignees": [],
       "labels": [],
       "body": "PR on standby for #441. (This doesn't GREASE the signal, as that's still somewhat up in the air in #441.)",
       "createdAt": "2021-07-13T16:26:32Z",
-      "updatedAt": "2021-07-13T16:35:46Z",
+      "updatedAt": "2021-07-29T21:33:07Z",
       "baseRepository": "tlswg/draft-ietf-tls-esni",
       "baseRefName": "master",
       "baseRefOid": "57b9e22624f1c7401cec35bb7ffed9ee93bb7041",
       "headRepository": "tlswg/draft-ietf-tls-esni",
       "headRefName": "caw/unify-signal",
       "headRefOid": "89fc65e0f971efc6cab1e6fe70283beecc0ca53f",
-      "closedAt": null,
+      "closedAt": "2021-07-29T21:33:07Z",
       "mergedAt": null,
       "mergedBy": null,
       "mergeCommit": null,
@@ -47362,6 +47362,113 @@
           "comments": []
         }
       ]
+    },
+    {
+      "number": 480,
+      "id": "MDExOlB1bGxSZXF1ZXN0Njk5ODA3NTU3",
+      "title": "Tidy up client ECH accept and GREASE sections",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/480",
+      "state": "MERGED",
+      "author": "davidben",
+      "authorAssociation": "CONTRIBUTOR",
+      "assignees": [],
+      "labels": [],
+      "body": "This PR cleans up the client text, in hopes of making it more precise\r\nand organized somewhat more chronologically. It then uses this cleanup\r\nto clarify bits we forgot to write down in the accept/reject/HRR\r\nmachinery:\r\n\r\n1. Handling the Server Response is now Determining ECH Acceptance and\r\n   only discusses the initial accept/reject decision.\r\n\r\n2. The portion of Handling HelloRetryRequest discussing the\r\n   accept/reject decision is moved to Determining ECH Acceptence.\r\n\r\n3. Determining ECH Acceptance is tidied up to discuss to what happens if\r\n   you see an older TLS version (it's a reject). In particular, in DTLS\r\n   1.2, the first server message might be HelloVerifyRequest and not\r\n   ServerHello or HelloRetryRequest.\r\n\r\n4. Accepted/Rejected ECH are now Handshaking with\r\n   ClientHelloInner/ClientHelloOuter to fit with the other section names\r\n   (lots of VERBing). They are unindented from (1) because that section\r\n   only talks about the accept/reject decision. This gives us a place to\r\n   discuss *all* changes to the handshake. We describe what it actually\r\n   means to handshake with ClientHelloInner, including implications to\r\n   the transcript. And...\r\n\r\n5. ...the portion of Handling HelloRetryRequest that discussed\r\n   constructing the second ClientHello never applied to the ECH Reject\r\n   case anyway, only ECH Accept. Move this to (4). Also expand on it so\r\n   it's a bit more clearly defined. I've also moved HPKE setup out of\r\n   Encrypting the ClientHello, as that's only relevant to one of the two\r\n   \"callers\" anyway. I'm not thrilled with this notion of \"partial\r\n   ClientHelloOuterAAD\", but the text used in Offering ECH and\r\n   Encrypting the ClientHello sections otherwise doesn't actually match.\r\n   Before this PR, both think they are responsible for constructing\r\n   ClientHelloOuter.\r\n\r\n6. With this and (1), Handling HelloRetryRequest is\r\n   now empty and removed.\r\n\r\n7. We forgot to write down the client half of\r\n   https://github.com/tlswg/draft-ietf-tls-esni/pull/461. There is now a\r\n   place for it in Handshaking with ClientHelloInner.\r\n\r\n8. We say that the ECH reject case ignores the HRR.ech extension, so ECH\r\n   GREASE says the same thing, to keep them aligned.\r\n\r\nThe Handshaking with ClientHelloOuter section could also do with an\r\neditorial pass, but I've omitted it from this PR because it was getting\r\na bit large as it is.",
+      "createdAt": "2021-07-29T20:04:42Z",
+      "updatedAt": "2021-07-30T22:52:01Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "8b099c334470ffa185d7ec28f09235f705c42342",
+      "headRepository": "davidben/draft-ietf-tls-esni",
+      "headRefName": "tidy-client",
+      "headRefOid": "94dd5b7f0c6940d3872bd5771bb90f74688965ff",
+      "closedAt": "2021-07-30T22:52:01Z",
+      "mergedAt": "2021-07-30T22:52:00Z",
+      "mergedBy": "chris-wood",
+      "mergeCommit": {
+        "oid": "5082ba6fa57954e1a5c5a64993894d5ada5758bb"
+      },
+      "comments": [],
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzE4NTI2OTE5",
+          "commit": {
+            "abbreviatedOid": "a1b6001"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "APPROVED",
+          "body": "Thanks for capping the amount of changes in this PR :) ",
+          "createdAt": "2021-07-29T20:56:40Z",
+          "updatedAt": "2021-07-29T21:10:48Z",
+          "comments": [
+            {
+              "originalPosition": 53,
+              "body": "```suggestion\r\nas described in {{encrypting-clienthello}}, to construct a ClientHelloOuter. It\r\n```",
+              "createdAt": "2021-07-29T20:56:40Z",
+              "updatedAt": "2021-07-29T21:10:49Z"
+            },
+            {
+              "originalPosition": 191,
+              "body": "```suggestion\r\n```\r\nThis is covered by the first step (1), right?",
+              "createdAt": "2021-07-29T21:05:10Z",
+              "updatedAt": "2021-07-29T21:10:49Z"
+            },
+            {
+              "originalPosition": 198,
+              "body": "```suggestion\r\nThe client then sends the second ClientHelloOuter to the server. However, as\r\nabove, it uses the second ClientHelloInner for preferences, and both the\r\nClientHelloInner messages for the transcript hash. Additionally, it checks the\r\nresulting ServerHello for ECH acceptance as in {{determining-ech-acceptance}}.\r\nIf the ServerHello does not also indicate ECH acceptance, the client MUST\r\nterminate the connection with an \"illegal_parameter\" alert.\r\n```",
+              "createdAt": "2021-07-29T21:06:20Z",
+              "updatedAt": "2021-07-29T21:10:49Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzE5NDkxMTE3",
+          "commit": {
+            "abbreviatedOid": "a1b6001"
+          },
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-07-30T22:06:05Z",
+          "updatedAt": "2021-07-30T22:06:41Z",
+          "comments": [
+            {
+              "originalPosition": 191,
+              "body": "Yeah, I guess there's no real need to restate it. Figured it wasn't obvious that the HelloRetryRequest might not match.",
+              "createdAt": "2021-07-30T22:06:05Z",
+              "updatedAt": "2021-07-30T22:06:41Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 481,
+      "id": "MDExOlB1bGxSZXF1ZXN0Njk5ODUzNjc0",
+      "title": "Allow the client-facing server to GREASE the extension.",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/481",
+      "state": "OPEN",
+      "author": "chris-wood",
+      "authorAssociation": "COLLABORATOR",
+      "assignees": [],
+      "labels": [],
+      "body": "This assumes the formulation where, on ECH reject, the server is the client-facing server. In other words, backend servers will never get a CH without ECH having been accepted, so GREASE doesn't apply there. \r\n\r\ncc @davidben ",
+      "createdAt": "2021-07-29T21:28:53Z",
+      "updatedAt": "2021-07-29T21:28:53Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "8b099c334470ffa185d7ec28f09235f705c42342",
+      "headRepository": "tlswg/draft-ietf-tls-esni",
+      "headRefName": "caw/allow-extension-grease",
+      "headRefOid": "652daede6f8eeba37ac65792ab22682fb216069c",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [],
+      "reviews": []
     }
   ]
 }
