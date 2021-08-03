@@ -1732,6 +1732,13 @@ important ideas and contributions.
 
 Issue and pull request numbers are listed with a leading octothorp.
 
+## Since draft-ietf-tls-esni-12
+
+- Server-side acceptance signal extension GREASE (#481)
+
+- Refactor overview, client implementation, and middlebox
+  sections (#480, #478, #475)
+
 ## Since draft-ietf-tls-esni-11
 
 - Move ClientHello padding to the encoding (#443)
