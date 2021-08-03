@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2021-08-01T01:00:31.757466+00:00",
+  "timestamp": "2021-08-03T00:57:41.994785+00:00",
   "repo": "tlswg/draft-ietf-tls-esni",
   "labels": [
     {
@@ -67,6 +67,11 @@
       "name": "design",
       "description": "Design-related issue",
       "color": "fef2c0"
+    },
+    {
+      "name": "parked",
+      "description": "Parked for deployment experience",
+      "color": "FB56EA"
     }
   ],
   "issues": [
@@ -5594,11 +5599,12 @@
       "authorAssociation": "CONTRIBUTOR",
       "assignees": [],
       "labels": [
-        "design"
+        "design",
+        "parked"
       ],
       "body": "ECH currently uses two different kinds of padding. The encrypted ClientHello is padded with the padding extension, while the server response is padded with TLS 1.3 record layer padding.\r\nhttps://datatracker.ietf.org/doc/html/draft-ietf-tls-esni-07#section-7.1\r\nhttps://datatracker.ietf.org/doc/html/draft-ietf-tls-esni-07#section-7.2\r\n\r\nUsing record-level padding in TLS over TCP is relatively straightforward as it\u2019s ordered. However DTLS and QUIC have their own record layers, with retransmission logic. Properly hiding some length then requires that packet loss and retransmission logic track and retransmit padding as if it were integrated into the byte stream.\r\n\r\nIn the case of QUIC, when a QUIC packet is determined to be lost, it is not retransmitted whole; instead information carried in the frames in lost packets might be sent again in new frames (draft-ietf-quic-transport, section 13.3). That same section states that PADDING frames do not need to be retransmitted. If ECH in QUIC relies on QUIC transport layer padding, that would need to be changed, and implementations would need to track how much adding is associated with CRYPTO frame data for retransmission.\r\n\r\nQUIC additionally needs the padding size communicated across API boundaries between the TLS and QUIC implementations. It\u2019s likely that everyone\u2019s first pass at the API will omit this, only to need to add an extra parameter (API change) later when they implement ECH.\r\n\r\nThis seems a somewhat general issue between padding at reliably- and unreliably-transmitted layers of the stack. HTTP/3 has something analogous (though carried in slightly frames). That draft actually discusses two options for padding and calls out the relation to packet loss:\r\n\r\n> Where HTTP/2 employs PADDING frames and Padding fields in other frames to make a connection more resistant to traffic analysis, HTTP/3 can either rely on transport-layer padding or employ the reserved frame and stream types discussed in Section 7.2.8 and Section 6.2.3. These methods of padding produce different results in terms of the granularity of padding, how padding is arranged in relation to the information that is being protected, whether padding is applied in the case of packet loss, and how an implementation might control padding. Redundant padding could even be counterproductive.\r\n\r\nhttps://quicwg.org/base-drafts/draft-ietf-quic-http.html#name-padding-and-traffic-analysi\r\n\r\nShould we match that precedent and move the padding into the handshake itself? That would make it apply to DTLS and QUIC transparently. If we do, a couple possibilities to start with:\r\n\r\n* Say that ECH implementations must tolerate unsolicited padding extensions and inject those into various messages. This is a goofy around messages without extensions (CertificateVerify), or messages with multiple extension blocks (Certificate), but as long as there is an extension block _somewhere_ in each padded flight, it's probably possible to fudge it.\r\n* Say that ECH adds a new kind of Padding handshake message, which the sender can incorporate into the handshake as needed, and the receiver ignores.\r\n\r\nIf we leave ECH as-is, it seems to me QUIC (both spec and implementations) needs some changes to track padding across retransmission.",
       "createdAt": "2020-08-13T18:03:12Z",
-      "updatedAt": "2021-04-21T15:41:28Z",
+      "updatedAt": "2021-08-02T16:17:29Z",
       "closedAt": null,
       "comments": [
         {
@@ -10274,16 +10280,17 @@
       "authorAssociation": "COLLABORATOR",
       "assignees": [],
       "labels": [
-        "design"
+        "design",
+        "parked"
       ],
       "body": "The topic of ECH extensions has come up a number of times. I can't remember if we ever had a consensus call on whether or not to keep them, so this issue tracks that point. ",
       "createdAt": "2021-04-21T15:01:59Z",
-      "updatedAt": "2021-04-29T22:34:36Z",
+      "updatedAt": "2021-08-02T16:17:30Z",
       "closedAt": null,
       "comments": [
         {
           "author": "sftcd",
-          "authorAssociation": "CONTRIBUTOR",
+          "authorAssociation": "COLLABORATOR",
           "body": "\nHiya,\n\nOn 21/04/2021 16:02, Christopher Wood wrote:\n> The topic of ECH extensions has come up a number of times. I can't\n> remember if we ever had a consensus call on whether or not to keep\n> them, so this issue tracks that point.\n\nThanks for re-directing my comment on that other issue.\n\nLet me try summarise what I think is the case against\nextensions and criticality.\n\nIn the main we already have sufficient extensibility outside\nof ECHConfig:\n\n- A new RRTYPE could be used, though that's a high barrier\n   so wouldn't be desirable.\n- A new SvcParamKey can be defined easily and that is a\n   designed-in extension point. We're already changing the\n   label for echconfig to ech and nobody seems very upset.\n   (Well, some of the DNS people were a bit:-) I doubt\n   defining a new code point would be a problem if needed.\n- ECHConfig has a version number, so we can just bump that\n   as needed, possibly alongside a TLS extension code point\n   bump to avoid problems.\n- Those already implementing are used to bumping the version\n   but afaik have no real code for extensions. (I do have some\n   code to embed random file content in an ECHConfig but have\n   not really tried it out.)\n- We can use multi-valued RRs to handle the case where we\n   need both an \"old\" and \"new\" form with different version\n   encodings.\n\nWriting code to produce, consume, test, fuzz etc. extensions\nwhen we have no current real uses for extensions is wasted\neffort. The extension consuming code is likely to be less\nwell tested over time and hence represent a risk. If we don't\nneed to take that risk, we ought not.\n\nSeparately on criticality, I'll just repeat what I said in\nthe other issue/thread:\n\nThe \"critical\" bit in x.509 extensions IMO didn't work. IIRC\nwe really designed it for the basicConstraints extension, as\nthat had to be understood by relying parties, but the result\nwas that we more or less only had one shot at introducing any\ncritical extensions - unless I'm forgetting stuff (which is\nentirely possible:-) pretty much all later attempts to add\nnew critical extensions failed as they'd break deployed\nclients. We'd have been better off adding the is-a-ca flag\nand anything else we knew to be critical to TBSCertificate.\n(Again IIRC, we put both critical and non-critical stuff into\nextensions because the *UniqueID fields in TBSCertificate\nthat were added in x.509v2 hadn't been useful so there was\na reluctance to put new fields in there at that point.)\n\nI don't see why criticality is different for ECH extensions.\nMy bet is that any new critical extension will need a new TLS\nextension code point once the first ECH RFC is issued.\n\nSo I'd remove the extensions fields we've defined and if not\nthen at least get rid of the idea of criticality.\n\nCheers,\nS.\n",
           "createdAt": "2021-04-21T21:11:47Z",
           "updatedAt": "2021-04-21T21:11:47Z"
@@ -10297,7 +10304,7 @@
         },
         {
           "author": "sftcd",
-          "authorAssociation": "CONTRIBUTOR",
+          "authorAssociation": "COLLABORATOR",
           "body": "\n\nOn 27/04/2021 19:27, Carrick Bartle wrote:\n>> we have no current real uses for extensions\n> \n> Isn't the point of extensions to allow things to be added in the\n> future that we currently don't need or foresee needing?\n\nYes, but...\n\n- we have many other extension points that can be used, in\n   particular ECHConfig.version\n- extensions without real uses seem IMO wasteful and will\n   lead to untested code and maybe affect interop if people\n   develop proprietary extensions\n- complexity: we're already doing enough of that:-)\n\nNot every PDU needs to be internally generically extensible,\nif there's already an equally good extension point.\n\nCheers,\nS.\n\n> \n",
           "createdAt": "2021-04-27T20:01:32Z",
           "updatedAt": "2021-04-27T20:01:32Z"
@@ -10332,7 +10339,7 @@
         },
         {
           "author": "sftcd",
-          "authorAssociation": "CONTRIBUTOR",
+          "authorAssociation": "COLLABORATOR",
           "body": "\n\nOn 29/04/2021 20:17, ekr wrote:\n> We have ample experience that \"version\" is a bad extension point \n\nI don't think that's comparing like with like.\n\nECHconfig.version is really a content type with no well\ndefined sequencing - at least that's how it's been treated.\nAnd so far, nothing in the spec that I recall says that one\nought prefer any particular ECHConfig.version over any other.\n\nI wonder would we all be happy with something like:\n\n  s/ECHCOnfig.version/ECHConfig.type/\n\nS.\n\n\n> \n> -Ekr\n> \n> \n> On Tue, Apr 27, 2021 at 1:01 PM sftcd ***@***.***> wrote:\n> \n>>\n>>\n>> On 27/04/2021 19:27, Carrick Bartle wrote:\n>>>> we have no current real uses for extensions\n>>>\n>>> Isn't the point of extensions to allow things to be added in the\n>>> future that we currently don't need or foresee needing?\n>>\n>> Yes, but...\n>>\n>> - we have many other extension points that can be used, in\n>> particular ECHConfig.version\n>> - extensions without real uses seem IMO wasteful and will\n>> lead to untested code and maybe affect interop if people\n>> develop proprietary extensions\n>> - complexity: we're already doing enough of that:-)\n>>\n>> Not every PDU needs to be internally generically extensible,\n>> if there's already an equally good extension point.\n>>\n>> Cheers,\n>> S.\n>>\n>>>\n>>\n>> \u2014\n>> You are receiving this because you are subscribed to this thread.\n>> Reply to this email directly, view it on GitHub\n>> <https://github.com/tlswg/draft-ietf-tls-esni/issues/427#issuecomment-827891174>,\n>> or unsubscribe\n>> <https://github.com/notifications/unsubscribe-auth/AAIPLINCCITLSXDLXV2URZLTK4J3DANCNFSM43KRJ3HQ>\n>> .\n>>\n> \n> \n",
           "createdAt": "2021-04-29T19:25:11Z",
           "updatedAt": "2021-04-29T19:25:11Z"
@@ -10346,7 +10353,7 @@
         },
         {
           "author": "sftcd",
-          "authorAssociation": "CONTRIBUTOR",
+          "authorAssociation": "COLLABORATOR",
           "body": "\n\nOn 29/04/2021 21:56, ekr wrote:\n> The issue is not about sequencing. \n\nWell, it would be if this were a version number. Those\nincrease. Maybe we agree that this isn't a version number\nat all.\n\n> It is about accreting a large number of\n> independent parameters under a single code point.\n\nWhere large == 0 ? (Being the number of extensions defined\nas of now.)\n\nSeriously though, if it turns out there's a need for two\nextensions for ECHConfig that can be mixed and matched,\nthen we could just define an ECHConfig type that allows\nthat either via two optional fields or a more generic\nextension mechanism. With zero extensions as of now, it's\ncheaper to punt on that decision to when it's needed and\nnot speculate now as to which design might be better.\n(That's just another long-winded way of restating that\nwe already have sufficient extensibility though, so I\nshould probably shut up for a bit in this thread:-)\n\nS.\n",
           "createdAt": "2021-04-29T21:23:36Z",
           "updatedAt": "2021-04-29T21:23:36Z"
@@ -10360,7 +10367,7 @@
         },
         {
           "author": "sftcd",
-          "authorAssociation": "CONTRIBUTOR",
+          "authorAssociation": "COLLABORATOR",
           "body": "\n\nOn 29/04/2021 22:59, ekr wrote:\n> The future is bigger than the past. I understand this isn't your view,\n\nThat misrepresents my view quite a bit.\n\nMy view is that we have sufficient extensibility already, not\nthat we don't need it.\n\nI think I've stated that a couple of times.\n\nS\n",
           "createdAt": "2021-04-29T22:09:13Z",
           "updatedAt": "2021-04-29T22:09:13Z"
@@ -10374,7 +10381,7 @@
         },
         {
           "author": "sftcd",
-          "authorAssociation": "CONTRIBUTOR",
+          "authorAssociation": "COLLABORATOR",
           "body": "\n\nOn 29/04/2021 23:18, ekr wrote:\n> My point is that I expect there to eventually be a significant number of\n> extensions, so the fact that the current number is 0 is not very\n> interesting.\n\nMy expectation is that we're more likely to cycle through a\nnumber of TLS extension code points as we learn more how to\ndo ECH and as we deal with adversaries who block such. But\nI don't see that happening very often.\n\nI also don't see any ECH-specific evidence for either of\nour expectations.\n\nAnd the number zero is always interesting:-)\n\nS.\n\n\n",
           "createdAt": "2021-04-29T22:34:36Z",
           "updatedAt": "2021-04-29T22:34:36Z"
@@ -10386,19 +10393,19 @@
       "id": "MDU6SXNzdWU4Nzc5OTA0NjY=",
       "title": "Clarify handling of transcript at client?",
       "url": "https://github.com/tlswg/draft-ietf-tls-esni/issues/429",
-      "state": "OPEN",
+      "state": "CLOSED",
       "author": "martinduke",
       "authorAssociation": "NONE",
       "assignees": [],
       "labels": [],
       "body": "I suspect this is editorial, but it would be helpful to clarify exactly how the client computes its transcript when it generates its keys, based on the permutations of who gets what. IIUC:\r\n\r\n* If the server authenticates the inner SNI, the client must construct the client hello as seen by the back-end server, including any OuterExtensions compression, and uses it in the transcript.\r\n* If the server authenticates the public SNI, the client uses the entire client hello in the hash as-is, including the (unreadable) encrypted_client_hello extension.\r\n\r\nA server that combines the client-facing and back-end functions also has to duplicate this logic, since it can see everything but maybe shouldn't use it all, and has to go through the motions of formally constructing a proper client hello to a back-end server.\r\n\r\nI found this all quite subtle to work out and asked some questions of one of the authors to fully understand. I'll leave it to the editors as to whether the draft needs some text to make this clearer.\r\n\r\n[Aside: is it computationally feasible to add some sort of \"checksum\" that would neutralize the difference in the hashes? That would make this a little less tricky, IMO]",
       "createdAt": "2021-05-06T20:27:01Z",
-      "updatedAt": "2021-05-28T17:56:25Z",
-      "closedAt": null,
+      "updatedAt": "2021-08-02T16:19:58Z",
+      "closedAt": "2021-08-02T16:19:58Z",
       "comments": [
         {
           "author": "sftcd",
-          "authorAssociation": "CONTRIBUTOR",
+          "authorAssociation": "COLLABORATOR",
           "body": "\n\nOn 06/05/2021 21:27, martinduke wrote:\n> I suspect this is editorial, but it would be helpful to clarify\n> exactly how the client computes its transcript when it generates its\n> keys, based on the permutations of who gets what\n+1 and test vectors would be good too\n",
           "createdAt": "2021-05-06T20:31:10Z",
           "updatedAt": "2021-05-06T20:31:10Z"
@@ -10451,6 +10458,13 @@
           "body": "Here's what I ended up writing to get this working. I don't have HRR support done yet, so I expect these comments will change a little bit:\r\n\r\n```Rust\r\n    pub fn confirm_ech(\r\n        &self,\r\n        ks: &mut KeyScheduleHandshake,\r\n        server_hello: &ServerHelloPayload,\r\n        suite: &SupportedCipherSuite,\r\n    ) -> Result<([u8; 32], HandshakeHash), Error> {\r\n        // The ClientHelloInner prior to encoding.\r\n        let m = self\r\n            .inner_message\r\n            .as_ref()\r\n            .ok_or_else(|| Error::General(\"No ClientHelloInner\".to_string()))?;\r\n\r\n        // A confirmation transcript calculated from the ClientHelloInner and the ServerHello,\r\n        // with the last 8 bytes of the server random modified to be zeros.\r\n        let conf = confirmation_transcript(m, server_hello, suite.get_hash());\r\n\r\n        // Derive a secret from the current handshake and the confirmation transcript.\r\n        let derived = ks.server_ech_confirmation_secret(&conf.get_current_hash());\r\n\r\n        // Check that first 8 digits of the derived secret match the last 8 digits of the original\r\n        // server random. This match signals that the server accepted the ECH offer.\r\n        if derived.into_inner()[..8] != server_hello.random.get_encoding()[24..] {\r\n            return Err(Error::General(\"ECH didn't match\".to_string()));\r\n        }\r\n\r\n        // Since the ECH offer was accepted, the handshake will move forward with a fresh transcript\r\n        // calculated from the ClientHelloInner, and the handshake should also use the client random\r\n        // from the ClientHelloInner. The ServerHello is added to the transcript next, whether or\r\n        // not the ECH offer was accepted.\r\n        let mut inner_transcript = HandshakeHash::new();\r\n        inner_transcript.start_hash(suite.get_hash());\r\n        inner_transcript.add_message(m);\r\n        Ok((self.inner_random, inner_transcript))\r\n    }\r\n```",
           "createdAt": "2021-05-27T19:53:32Z",
           "updatedAt": "2021-05-28T17:56:25Z"
+        },
+        {
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "body": "Which transcript is used should be better clarified now that #480 landed. Closing as such. (If we want to track test vectors for ECH, let's open a new issue.)",
+          "createdAt": "2021-08-02T16:19:57Z",
+          "updatedAt": "2021-08-02T16:19:57Z"
         }
       ]
     },
@@ -10642,10 +10656,12 @@
       "author": "chris-wood",
       "authorAssociation": "COLLABORATOR",
       "assignees": [],
-      "labels": [],
+      "labels": [
+        "parked"
+      ],
       "body": "This issue tracks any changes to the ECH specification that can mitigate or minimize the probability of HRR in the context of ECH. Note that it is not meant to disable ECH when HRR occurs, but rather to make this case unlikely. This may mean, for example, giving guidance on how to construct ClientHellos based on server hints in the HTTPS record, though this is somewhat orthogonal to ECH. \r\n\r\ncc @sftcd, @ekr, @martinthomson, @davidben, @cjpatton ",
       "createdAt": "2021-06-03T20:58:08Z",
-      "updatedAt": "2021-06-04T13:07:37Z",
+      "updatedAt": "2021-08-02T16:20:20Z",
       "closedAt": null,
       "comments": [
         {
@@ -10715,10 +10731,13 @@
       "author": "chris-wood",
       "authorAssociation": "COLLABORATOR",
       "assignees": [],
-      "labels": [],
+      "labels": [
+        "design",
+        "parked"
+      ],
       "body": "Currently, we reuse some bytes of SH.random to signal ECH acceptance when HRR does not occur. Based on [discussion within the context of the HRR design team](https://github.com/tlswg/draft-ietf-tls-esni/wiki/HRR-Design-Team), it may be fruitful to reconsider where this signal goes. Should it in a cleartext extension? Note that this was previously discussed in the context of the original [trial decryption issue](https://github.com/tlswg/draft-ietf-tls-esni/issues/274). It may be worth revisiting this signal's placement as it pertains to the longterm viability of HRR. \r\n\r\ncc @sftcd, @ekr, @martinthomson, @davidben, @cjpatton ",
       "createdAt": "2021-06-03T21:01:35Z",
-      "updatedAt": "2021-07-14T00:37:54Z",
+      "updatedAt": "2021-08-02T16:20:31Z",
       "closedAt": null,
       "comments": [
         {
@@ -10899,10 +10918,12 @@
       "author": "davidben",
       "authorAssociation": "CONTRIBUTOR",
       "assignees": [],
-      "labels": [],
+      "labels": [
+        "pre-wglc"
+      ],
       "body": "We should reserve a few extension and ECH version code points for GREASE (perhaps just the same ?a?a pattern). The reserved non-mandatory code points can just be included in valid ECHConfigs, to ensure clients ignore them. The mandatory ones and the reserved versions can be included in ECHConfigLists, to ensure clients can skip over them.",
       "createdAt": "2021-06-07T18:50:42Z",
-      "updatedAt": "2021-06-07T18:50:42Z",
+      "updatedAt": "2021-08-02T16:20:56Z",
       "closedAt": null,
       "comments": []
     },
@@ -11113,10 +11134,12 @@
       "author": "bemasc",
       "authorAssociation": "CONTRIBUTOR",
       "assignees": [],
-      "labels": [],
+      "labels": [
+        "parked"
+      ],
       "body": "@davidben \r\n\r\nCurrently, if all the `ECHConfig`s in the `ECHConfigList` are rejected by the client, the client always falls back to sending the ClientHello in plaintext.  This is normally appropriate, but it may not always be.  Once ECH is well-established, secretive servers may prefer for clients to fail the connection rather than revealing the server's SNI by connecting without ECH, especially if the server only accepts ECH ClientHellos.\r\n\r\nUnfortunately, an `ECHConfig` extension cannot be used to express this preference, because extensions are scoped to a specific `ECHConfig`, and we are discussing the case where all `ECHConfig`s have been rejected.\r\n\r\nA boolean field in `ECHConfigList` (e.g. `permit_plaintext`, `ech_only`) would be sufficient to encode this instruction.",
       "createdAt": "2021-07-22T01:59:52Z",
-      "updatedAt": "2021-07-22T10:02:40Z",
+      "updatedAt": "2021-08-02T16:25:00Z",
       "closedAt": null,
       "comments": [
         {
@@ -40768,24 +40791,26 @@
       "id": "MDExOlB1bGxSZXF1ZXN0NjA5Mzk1MjQ3",
       "title": "Grease and HRR leak",
       "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/419",
-      "state": "OPEN",
+      "state": "MERGED",
       "author": "martinthomson",
       "authorAssociation": "CONTRIBUTOR",
       "assignees": [],
       "labels": [],
       "body": "But that is just how it is.  We get to choose between that leakage and a\r\nknown large amount of bustage.\r\n\r\nCloses #358.",
       "createdAt": "2021-04-06T02:05:45Z",
-      "updatedAt": "2021-07-19T19:07:36Z",
+      "updatedAt": "2021-08-02T16:15:20Z",
       "baseRepository": "tlswg/draft-ietf-tls-esni",
       "baseRefName": "master",
-      "baseRefOid": "95a3fb44cc7703ab33ef11a9781f51962f3d0e0b",
+      "baseRefOid": "5082ba6fa57954e1a5c5a64993894d5ada5758bb",
       "headRepository": "martinthomson/draft-ietf-tls-esni",
       "headRefName": "grease-sticks-out",
-      "headRefOid": "2b3ea14c2c2b3283bec599c10eda1f02588ec491",
-      "closedAt": null,
-      "mergedAt": null,
-      "mergedBy": null,
-      "mergeCommit": null,
+      "headRefOid": "04bb8ba1972e08eed0e23af2be7c3e9b0a1de0ca",
+      "closedAt": "2021-08-02T16:15:20Z",
+      "mergedAt": "2021-08-02T16:15:19Z",
+      "mergedBy": "chris-wood",
+      "mergeCommit": {
+        "oid": "b02467727c3213e58e3262c95c6b1eb189c14673"
+      },
       "comments": [
         {
           "author": "cjpatton",
@@ -47456,19 +47481,73 @@
       "labels": [],
       "body": "This assumes the formulation where, on ECH reject, the server is the client-facing server. In other words, backend servers will never get a CH without ECH having been accepted, so GREASE doesn't apply there. \r\n\r\ncc @davidben ",
       "createdAt": "2021-07-29T21:28:53Z",
-      "updatedAt": "2021-07-29T21:28:53Z",
+      "updatedAt": "2021-08-02T19:20:58Z",
       "baseRepository": "tlswg/draft-ietf-tls-esni",
       "baseRefName": "master",
       "baseRefOid": "8b099c334470ffa185d7ec28f09235f705c42342",
       "headRepository": "tlswg/draft-ietf-tls-esni",
       "headRefName": "caw/allow-extension-grease",
-      "headRefOid": "652daede6f8eeba37ac65792ab22682fb216069c",
+      "headRefOid": "929d5b035f9c73111f1f649048c720ff29acc55f",
       "closedAt": null,
       "mergedAt": null,
       "mergedBy": null,
       "mergeCommit": null,
       "comments": [],
-      "reviews": []
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIwNDYyNzMy",
+          "commit": {
+            "abbreviatedOid": "652daed"
+          },
+          "author": "cjpatton",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "COMMENTED",
+          "body": "I'm good with the change, but I think the spec needs more context for it.",
+          "createdAt": "2021-08-02T18:01:58Z",
+          "updatedAt": "2021-08-02T18:02:21Z",
+          "comments": [
+            {
+              "originalPosition": 6,
+              "body": "* In which message may the extension appear? ServerHello, HelloRetryRequest, or both?\r\n* I think we should make it clear that the purpose is to grease. Maybe point to Security Considerations and expand the relevant section to talk about this?",
+              "createdAt": "2021-08-02T18:01:59Z",
+              "updatedAt": "2021-08-02T18:02:21Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIwNDk1NDIx",
+          "commit": {
+            "abbreviatedOid": "929d5b0"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-02T18:46:05Z",
+          "updatedAt": "2021-08-02T18:46:05Z",
+          "comments": [
+            {
+              "originalPosition": 6,
+              "body": "Good suggestions -- I moved some stuff around to try and clarify.",
+              "createdAt": "2021-08-02T18:46:05Z",
+              "updatedAt": "2021-08-02T18:46:05Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIwNTIwNjIy",
+          "commit": {
+            "abbreviatedOid": "929d5b0"
+          },
+          "author": "cjpatton",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2021-08-02T19:20:58Z",
+          "updatedAt": "2021-08-02T19:20:58Z",
+          "comments": []
+        }
+      ]
     }
   ]
 }
