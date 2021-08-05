@@ -1123,13 +1123,19 @@ Table of Contents
 
    Otherwise, if all candidate ECHConfig values fail to decrypt the
    extension, the client-facing server MUST ignore the extension and
-   proceed with the connection using ClientHelloOuter.  This connection
-   proceeds as usual, except the server MUST include the
-   "encrypted_client_hello" extension in its EncryptedExtensions with
-   the "retry_configs" field set to one or more ECHConfig structures
-   with up-to-date keys.  Servers MAY supply multiple ECHConfig values
-   of different versions.  This allows a server to support multiple
-   versions at once.
+   proceed with the connection using ClientHelloOuter, with the
+   following modifications:
+
+   *  If sending a HelloRetryRequest, the server MAY include an
+      "encrypted_client_hello" extension with a payload of 8 random
+      bytes; see Section 10.9.4 for details.
+
+   *  If the server is configured with any ECHConfigs, it MUST include
+      the "encrypted_client_hello" extension in its EncryptedExtensions
+      with the "retry_configs" field set to one or more ECHConfig
+      structures with up-to-date keys.  Servers MAY supply multiple
+      ECHConfig values of different versions.  This allows a server to
+      support multiple versions at once.
 
    Note that decryption failure could indicate a GREASE ECH extension
    (see Section 6.2), so it is necessary for servers to proceed with the
@@ -1174,7 +1180,11 @@ Table of Contents
    did not include an "encrypted_client_hello" extension, the client-
    facing server proceeds with the connection as usual.  The server does
    not decrypt the second ClientHello's ECHClientHello.payload value, if
-   there is one.
+   there is one.  Moreover, if the server is configured with any
+   ECHConfigs, it MUST include the "encrypted_client_hello" extension in
+   its EncryptedExtensions with the "retry_configs" field set to one or
+   more ECHConfig structures with up-to-date keys, as described in
+   Section 7.1.
 
    Note that a client-facing server that forwards the first ClientHello
    cannot include its own "cookie" extension if the backend server sends
