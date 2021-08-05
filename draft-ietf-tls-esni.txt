@@ -67,7 +67,8 @@ Table of Contents
      3.1.  Topologies
      3.2.  Encrypted ClientHello (ECH)
    4.  Encrypted ClientHello Configuration
-     4.1.  Configuration Extensions
+     4.1.  Configuration Identifiers
+     4.2.  Configuration Extensions
    5.  The "encrypted_client_hello" Extension
      5.1.  Encoding the ClientHelloInner
      5.2.  Authenticating the ClientHelloOuter
@@ -323,12 +324,7 @@ Table of Contents
    key_config  A "HpkeKeyConfig" structure carrying the configuration
       information associated with the HPKE public key.  Note that this
       structure contains the "config_id" field, which applies to the
-      entire ECHConfigContents.  Sites MUST NOT publish two different
-      "ECHConfigContents" values with the same "HpkeKeyConfig" value.
-      The RECOMMENDED technique for choosing "config_id" is to choose a
-      random byte.  This process is repeated if this config_id matches
-      that of any valid ECHConfig, which could include any ECHConfig
-      that has been recently removed from active use.
+      entire ECHConfigContents.
 
    maximum_name_length  The longest name of a backend server, if known.
       If not known, this value can be set to zero.  It is used to
@@ -356,7 +352,7 @@ Table of Contents
 
    extensions  A list of extensions that the client must take into
       consideration when generating a ClientHello message.  These are
-      described below (Section 4.1).
+      described below (Section 4.2).
 
    [[OPEN ISSUE: determine if clients should enforce a 63-octet label
    limit for public_name]] [[OPEN ISSUE: fix reference to WHATWG-IPV4]]
@@ -365,7 +361,8 @@ Table of Contents
 
    config_id  A one-byte identifier for the given HPKE key
       configuration.  This is used by clients to indicate the key used
-      for ClientHello encryption.
+      for ClientHello encryption.  Section 4.1 describes how client-
+      facing servers allocate this value.
 
    kem_id  The HPKE KEM identifier corresponding to "public_key".
       Clients MUST ignore any "ECHConfig" structure with a key using a
@@ -387,7 +384,28 @@ Table of Contents
    to support multiple versions of ECH and multiple sets of ECH
    parameters.
 
-4.1.  Configuration Extensions
+4.1.  Configuration Identifiers
+
+   A client-facing server has a set of known ECHConfig values, with
+   corresponding private keys.  This set SHOULD contain the currently
+   published values, as well as previous values that may still be in
+   use, since clients may cache DNS records up to a TTL or longer.
+
+   Section 7.1 describes a trial decryption process for decrypting the
+   ClientHello.  This can impact performance when the client-facing
+   server maintains many known ECHConfig values.  To avoid this, the
+   client-facing server SHOULD allocate distinct "config_id" values for
+   each ECHConfig in its known set.  The RECOMMENDED strategy is via
+   rejection sampling, i.e., to randomly select "config_id" repeatedly
+   until it does not match any known ECHConfig.
+
+   It is not necessary for "config_id" values across different client-
+   facing servers to be distinct.  A backend server may be hosted behind
+   two different client-facing servers with colliding "config_id" values
+   without any performance impact.  Values may also be reused if the
+   previous ECHConfig is no longer in the known set.
+
+4.2.  Configuration Extensions
 
    ECH configuration extensions are used to provide room for additional
    functionality as needed.  See Section 12 for guidance on which types
