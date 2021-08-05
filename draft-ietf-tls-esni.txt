@@ -313,7 +313,9 @@ Table of Contents
       for the "encrypted_client_hello" extension.  Clients MUST ignore
       any "ECHConfig" structure with a version they do not support.
 
-   length  The length, in bytes, of the next field.
+   length  The length, in bytes, of the next field.  This length field
+      allows implementations to skip over the elements in such a list
+      where they cannot parse the specific version of ECHConfig.
 
    contents  An opaque byte string whose contents depend on the version.
       For this specification, the contents are an "ECHConfigContents"
