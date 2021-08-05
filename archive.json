@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2021-08-03T00:57:41.994785+00:00",
+  "timestamp": "2021-08-05T00:53:35.827570+00:00",
   "repo": "tlswg/draft-ietf-tls-esni",
   "labels": [
     {
@@ -47481,18 +47481,26 @@
       "labels": [],
       "body": "This assumes the formulation where, on ECH reject, the server is the client-facing server. In other words, backend servers will never get a CH without ECH having been accepted, so GREASE doesn't apply there. \r\n\r\ncc @davidben ",
       "createdAt": "2021-07-29T21:28:53Z",
-      "updatedAt": "2021-08-02T19:20:58Z",
+      "updatedAt": "2021-08-03T21:38:12Z",
       "baseRepository": "tlswg/draft-ietf-tls-esni",
       "baseRefName": "master",
       "baseRefOid": "8b099c334470ffa185d7ec28f09235f705c42342",
       "headRepository": "tlswg/draft-ietf-tls-esni",
       "headRefName": "caw/allow-extension-grease",
-      "headRefOid": "929d5b035f9c73111f1f649048c720ff29acc55f",
+      "headRefOid": "febb8fa9a6836b1e02ec319f83154650f8c8b594",
       "closedAt": null,
       "mergedAt": null,
       "mergedBy": null,
       "mergeCommit": null,
-      "comments": [],
+      "comments": [
+        {
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "body": "cc @martinthomson, too, since he had thoughts on this",
+          "createdAt": "2021-08-03T20:05:24Z",
+          "updatedAt": "2021-08-03T20:05:24Z"
+        }
+      ],
       "reviews": [
         {
           "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIwNDYyNzMy",
@@ -47546,8 +47554,927 @@
           "createdAt": "2021-08-02T19:20:58Z",
           "updatedAt": "2021-08-02T19:20:58Z",
           "comments": []
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIxNTUzNzg2",
+          "commit": {
+            "abbreviatedOid": "929d5b0"
+          },
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-03T19:10:03Z",
+          "updatedAt": "2021-08-03T19:18:51Z",
+          "comments": [
+            {
+              "originalPosition": 29,
+              "body": "This doesn't have anything to do with HRR. Do we need to restate it from the section here? (I wonder if the server half could also do with an editorial pass to make it more chronological.)",
+              "createdAt": "2021-08-03T19:10:03Z",
+              "updatedAt": "2021-08-03T19:18:51Z"
+            },
+            {
+              "originalPosition": 19,
+              "body": "This is a little long. How about:\r\n\r\n```\r\nOtherwise, if all candidate ECHConfig values fail to decrypt the extension, the\r\nclient-facing server MUST ignore the extension and proceed with the connection\r\nusing ClientHelloOuter, with the following modifications:\r\n\r\n* If sending a HelloRetryRequest, the server MAY include an\r\n  \"encrypted_client_hello\" extension with a payload of 8 random bytes; see\r\n  {{dont-stick-out}} for details.\r\n\r\n* The server MUST include the \"encrypted_client_hello\" extension in its\r\n  EncryptedExtensions message with ....\r\n```\r\n\r\nThis also fixes the issue where we need to duplicate the EncryptedExtensions text (see comment below).\r\n\r\nThough, it occurs to me, even that's a little odd because even non-ECH servers could send HRR.ECH for GREASE. Maybe we can handle that be deleting a few words. Suppose you are a server with zero ECHConfigs. The dispatch in {#server-behavior} still sends you to this section. The candidate ECHConfig values is then empty, so you'll hit this case. That means we actually should replace:\r\n\r\n> The server MUST include the \"encrypted_client_hello\" extension in its EncryptedExtensions message with [...]\r\n\r\nwith:\r\n\r\n> If the server is configured with any ECHConfigs, it MUST include the \"encrypted_client_hello\" extension in its EncryptedExtensions message with [...]",
+              "createdAt": "2021-08-03T19:18:37Z",
+              "updatedAt": "2021-08-03T19:18:51Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIxNTc3NjIx",
+          "commit": {
+            "abbreviatedOid": "929d5b0"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-03T19:39:53Z",
+          "updatedAt": "2021-08-03T19:39:53Z",
+          "comments": [
+            {
+              "originalPosition": 19,
+              "body": "That modification is good in both places -- I'll take it!",
+              "createdAt": "2021-08-03T19:39:53Z",
+              "updatedAt": "2021-08-03T19:39:53Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIxNTc4NjYy",
+          "commit": {
+            "abbreviatedOid": "929d5b0"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-03T19:41:11Z",
+          "updatedAt": "2021-08-03T19:41:11Z",
+          "comments": [
+            {
+              "originalPosition": 29,
+              "body": "We should do such a pass, but let's do it separately. ",
+              "createdAt": "2021-08-03T19:41:11Z",
+              "updatedAt": "2021-08-03T19:41:11Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIxNTc5ODEw",
+          "commit": {
+            "abbreviatedOid": "929d5b0"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-03T19:42:37Z",
+          "updatedAt": "2021-08-03T19:42:37Z",
+          "comments": [
+            {
+              "originalPosition": 29,
+              "body": "(The server still includes configs upon rejection, even in the event of HRR, right?)",
+              "createdAt": "2021-08-03T19:42:37Z",
+              "updatedAt": "2021-08-03T19:42:37Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIxNjY3NDAz",
+          "commit": {
+            "abbreviatedOid": "febb8fa"
+          },
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-03T21:36:38Z",
+          "updatedAt": "2021-08-03T21:36:38Z",
+          "comments": [
+            {
+              "originalPosition": 29,
+              "body": "It does. The point of my suggestion with the bullet points was instead to have the one sentence apply to both cases.",
+              "createdAt": "2021-08-03T21:36:38Z",
+              "updatedAt": "2021-08-03T21:36:38Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIxNjY4NDA0",
+          "commit": {
+            "abbreviatedOid": "febb8fa"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-03T21:38:12Z",
+          "updatedAt": "2021-08-03T21:38:12Z",
+          "comments": [
+            {
+              "originalPosition": 29,
+              "body": "Gotcha. In my reading this section it seemed clear to include here, but we can drop it later on if not needed.",
+              "createdAt": "2021-08-03T21:38:12Z",
+              "updatedAt": "2021-08-03T21:38:12Z"
+            }
+          ]
         }
       ]
+    },
+    {
+      "number": 482,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzAyNDczNzUy",
+      "title": "Add -12 changelog.",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/482",
+      "state": "OPEN",
+      "author": "chris-wood",
+      "authorAssociation": "COLLABORATOR",
+      "assignees": [],
+      "labels": [],
+      "body": "As discussed in IETF 111. Blocked on #481.\r\n\r\ncc @martinthomson, @davidben, @cjpatton, @cbartle891, @sftcd ",
+      "createdAt": "2021-08-03T17:42:18Z",
+      "updatedAt": "2021-08-03T22:37:47Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "7e79d8571880b6c87080d7fc86b370d00141b3d6",
+      "headRepository": "tlswg/draft-ietf-tls-esni",
+      "headRefName": "caw/changelog-12",
+      "headRefOid": "70f8f61beaebcaa74aca8dda81b31fb945584608",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [],
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIxNTYxMjMx",
+          "commit": {
+            "abbreviatedOid": "70f8f61"
+          },
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2021-08-03T19:19:34Z",
+          "updatedAt": "2021-08-03T19:19:34Z",
+          "comments": []
+        }
+      ]
+    },
+    {
+      "number": 483,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzAyNjgyMzc1",
+      "title": "Update codepoints to -13.",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/483",
+      "state": "MERGED",
+      "author": "chris-wood",
+      "authorAssociation": "COLLABORATOR",
+      "assignees": [],
+      "labels": [],
+      "body": "cc @davidben, @martinthomson, @cbartle891, @cjpatton, @sftcd ",
+      "createdAt": "2021-08-03T22:37:19Z",
+      "updatedAt": "2021-08-04T20:20:07Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "7e79d8571880b6c87080d7fc86b370d00141b3d6",
+      "headRepository": "tlswg/draft-ietf-tls-esni",
+      "headRefName": "caw/update-codepoints",
+      "headRefOid": "fd484eed664cfd7410e7b9fb730d0b389d34cd66",
+      "closedAt": "2021-08-04T20:20:07Z",
+      "mergedAt": "2021-08-04T20:20:07Z",
+      "mergedBy": "chris-wood",
+      "mergeCommit": {
+        "oid": "722f5e9175c9adb154ec54d74762cc2707c0546b"
+      },
+      "comments": [],
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIxNzA1NzY2",
+          "commit": {
+            "abbreviatedOid": "fd484ee"
+          },
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2021-08-03T22:47:48Z",
+          "updatedAt": "2021-08-03T22:47:48Z",
+          "comments": []
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIyNjYyMjM2",
+          "commit": {
+            "abbreviatedOid": "fd484ee"
+          },
+          "author": "cjpatton",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2021-08-04T19:31:00Z",
+          "updatedAt": "2021-08-04T19:31:00Z",
+          "comments": []
+        }
+      ]
+    },
+    {
+      "number": 484,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzAzODM5MzEx",
+      "title": "HPKE isn't draft-08 any more",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/484",
+      "state": "OPEN",
+      "author": "sftcd",
+      "authorAssociation": "COLLABORATOR",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2021-08-04T18:38:20Z",
+      "updatedAt": "2021-08-04T18:47:59Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "7e79d8571880b6c87080d7fc86b370d00141b3d6",
+      "headRepository": "sftcd/draft-ietf-tls-esni",
+      "headRefName": "sftcd-patch-1",
+      "headRefOid": "395a69a0d7b98f493472a54c96c060bb193c73af",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [],
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIyNjIxODQ4",
+          "commit": {
+            "abbreviatedOid": "395a69a"
+          },
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "APPROVED",
+          "body": "Hopefully HPKE is done enough that we no longer need to pin a draft version.",
+          "createdAt": "2021-08-04T18:47:59Z",
+          "updatedAt": "2021-08-04T18:47:59Z",
+          "comments": []
+        }
+      ]
+    },
+    {
+      "number": 485,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzAzODUzMjUx",
+      "title": "note experiment",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/485",
+      "state": "OPEN",
+      "author": "sftcd",
+      "authorAssociation": "COLLABORATOR",
+      "assignees": [],
+      "labels": [],
+      "body": "Seems useful to note that -13 should be around for a while but still might change later ",
+      "createdAt": "2021-08-04T18:49:45Z",
+      "updatedAt": "2021-08-04T18:49:45Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "7e79d8571880b6c87080d7fc86b370d00141b3d6",
+      "headRepository": "sftcd/draft-ietf-tls-esni",
+      "headRefName": "note-experiments",
+      "headRefOid": "f129c06b2fb2eef092cc06be401fa8e279382ade",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [],
+      "reviews": []
+    },
+    {
+      "number": 486,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzAzODcxNTY3",
+      "title": "redundant length",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/486",
+      "state": "OPEN",
+      "author": "sftcd",
+      "authorAssociation": "COLLABORATOR",
+      "assignees": [],
+      "labels": [],
+      "body": "ECHConfig.length is either redundant or else it needs more explanation. This PR assumes the former. Either's fine by me (my draft-10 code supports >1 key per supplied ECHConfig for obscure API reasons anyway:-). This change notes that the field is currently redundant as there's only one ECHConfigContents per ECHConfig.  If we want to allow >1 ECHConfigContents per ECHConfig then we should say that explicitly here and likely somewhere else too. \r\n\r\nI'd have to look again at the SVCB spec but I think this being redundant also means that a deployment needs to have >1 HTTPS/SVCB RR value to publish more than one key at a time. If that's correct it may be worth noting here somewhere too.",
+      "createdAt": "2021-08-04T19:06:14Z",
+      "updatedAt": "2021-08-04T21:25:59Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "7e79d8571880b6c87080d7fc86b370d00141b3d6",
+      "headRepository": "sftcd/draft-ietf-tls-esni",
+      "headRefName": "useless-length",
+      "headRefOid": "ce2db58053d55bd477e8d0aec4ff8aec609c44cc",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [
+        {
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "body": "No, the length prefix is necessary. It's not about having multiple ECHConfigContents per ECHConfig. It's about having multiple ECHConfigs in an ECHConfigList, and being able to skip over ECHConfigs from versions you don't understand. This property is a requirement for allowing us to experiment at all, without having to define a new SVCB/HTTPS key on every draft.\r\n\r\n(TLS structures are not automatically delimited by length prefixes. You need to know their definition in order to skip over them. That means we need a version-independent ECHConfig structure. The length prefix with opaque body gives that by hiding the version-dependent ECHConfigContents bit.)\r\n\r\n> a deployment needs to have >1 HTTPS/SVCB RR value to publish more than one key at a time.\r\n\r\nThis is precisely what we want to avoid, and why we have the length prefix. Using separate HTTPS/SVCB RR values will result in either downgrade vulnerabilities on the client, or a lot of complexity. Keep in mind that DNS, connection setup, and TLS logic can come from different OS components or parts of the system. If we make the choice of HTTPS/SVCB RR depend on TLS capabilities, your DNS API needs to take in a description of your TLS stack's capabilities.\r\n\r\nThis would be excessive complexity in the way of deploying ECH, so we should keep the current, overall simpler design.",
+          "createdAt": "2021-08-04T19:16:59Z",
+          "updatedAt": "2021-08-04T19:16:59Z"
+        },
+        {
+          "author": "ekr",
+          "authorAssociation": "COLLABORATOR",
+          "body": "It's not redundant. It allows you to skip past ECHConfigs of unknown version, in, for instance ECHEncryptedExtensions.\r\n",
+          "createdAt": "2021-08-04T19:17:18Z",
+          "updatedAt": "2021-08-04T19:17:18Z"
+        },
+        {
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "body": "Ok, it's fine if this isn't redundant but then it being needed for ECHConflgList ought be explained IMO.\r\n\r\nAnd maybe also mention that SVCB now contains an encoded ECHConfigList at the same time too.",
+          "createdAt": "2021-08-04T19:40:35Z",
+          "updatedAt": "2021-08-04T19:43:48Z"
+        },
+        {
+          "author": "ekr",
+          "authorAssociation": "COLLABORATOR",
+          "body": "I don't think we need to explain the rationale for every detail of how we define structures. It's not a security requirement someone needs to understand about how to implement this and the general need for this kind of length is just kind of community knowledge. If someone wanted to write that up in a TLS PDU style guide of some kind that would be fine, but it doesn't belong here.\r\n",
+          "createdAt": "2021-08-04T21:21:09Z",
+          "updatedAt": "2021-08-04T21:21:09Z"
+        },
+        {
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "body": "Fair enough that we disagree that this is unclear as-is and can usefully, simply and easily be improved, but that we don't have to do that:-) \r\n\r\nThe basic problem I think is that issues related to cardinality aren't clearly explained here nor in SVCB and I do think that'll bite some implementer sometime. I'm not fussed as to how exactly we improve that.\r\n\r\n(And I'm not asking for every detail to be explained, I'm commenting while doing a sorta-fresh read through as per list-discussion yesterday.)",
+          "createdAt": "2021-08-04T21:25:58Z",
+          "updatedAt": "2021-08-04T21:25:58Z"
+        }
+      ],
+      "reviews": []
+    },
+    {
+      "number": 487,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzAzODk5MjQz",
+      "title": "note potential config_id collisions",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/487",
+      "state": "CLOSED",
+      "author": "sftcd",
+      "authorAssociation": "COLLABORATOR",
+      "assignees": [],
+      "labels": [],
+      "body": "MUST->SHOULD for not publishing colliding config_id values.\r\n\r\nThis is a little more than editorial maybe but later text in any case seems to handle config_id collisions so given the MUST here is really on DNS provisioning code and not ECH code anyway, I'll claim it's editorial:-) I'd also be fine with s/MUST/should/ if that were thought better.\r\n\r\nI also suggest deleting a sentence that looks like it no longer belongs. (\"This process...\") It could be that ought be shifted to later where trial decryption is discussed, not sure. ",
+      "createdAt": "2021-08-04T19:25:17Z",
+      "updatedAt": "2021-08-04T21:40:23Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "7e79d8571880b6c87080d7fc86b370d00141b3d6",
+      "headRepository": "sftcd/draft-ietf-tls-esni",
+      "headRefName": "birthday",
+      "headRefOid": "ef07feacf8b259c1acec5792224320d2ceca1ab6",
+      "closedAt": "2021-08-04T21:39:41Z",
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [
+        {
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "body": "Closed - #491  is a better fix.",
+          "createdAt": "2021-08-04T21:39:41Z",
+          "updatedAt": "2021-08-04T21:40:23Z"
+        }
+      ],
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIyNjcyNjU2",
+          "commit": {
+            "abbreviatedOid": "ef07fea"
+          },
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "COMMENTED",
+          "body": "Agreed on MUST -> SHOULD, since it's just a performance thing. If you have a collision, trial decryption would repair it. It's just more server load. But I don't think the other two changes are right.",
+          "createdAt": "2021-08-04T19:43:54Z",
+          "updatedAt": "2021-08-04T19:45:27Z",
+          "comments": [
+            {
+              "originalPosition": 10,
+              "body": "This sentence is important to the recommendation, otherwise it doesn't actually avoid collisions.",
+              "createdAt": "2021-08-04T19:43:54Z",
+              "updatedAt": "2021-08-04T19:45:27Z"
+            },
+            {
+              "originalPosition": 13,
+              "body": "I don't think this example is right. If a backend server is supported by multiple client-facing servers (A and B), they need to set up their DNS properly, otherwise the connection will fail. For instance, multiple HTTPS RRs, one A's IP + A's ECHConfigList, and another with B's IP + B's  ECHConfigList.\r\n\r\nIndeed this is why we switched from the old ECH DNS record: we got feedback from CDN operators that IPs and ECHConfigLists need to be correlated to avoid multi-CDN problems.",
+              "createdAt": "2021-08-04T19:45:04Z",
+              "updatedAt": "2021-08-04T19:45:27Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIyNjg1NTg5",
+          "commit": {
+            "abbreviatedOid": "ef07fea"
+          },
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-04T19:59:53Z",
+          "updatedAt": "2021-08-04T19:59:53Z",
+          "comments": [
+            {
+              "originalPosition": 10,
+              "body": "I'm not clear how CDN-A knows that CDN-B (also used by the backend) will in future not collide. So while CDN-A can repeat the process as often as it wants, and the ECHConfig value from CDN-A won't collide with one another, the backend can still get a collision. Or where am I wrong?",
+              "createdAt": "2021-08-04T19:59:53Z",
+              "updatedAt": "2021-08-04T19:59:53Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIyNjg3NjQw",
+          "commit": {
+            "abbreviatedOid": "ef07fea"
+          },
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-04T20:02:24Z",
+          "updatedAt": "2021-08-04T20:02:25Z",
+          "comments": [
+            {
+              "originalPosition": 13,
+              "body": "\"They need to setup their DNS properly\" is the issue - it's the backend's DNS not the client-facing server's DNS.",
+              "createdAt": "2021-08-04T20:02:25Z",
+              "updatedAt": "2021-08-04T20:02:25Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIyNjg4NzU4",
+          "commit": {
+            "abbreviatedOid": "ef07fea"
+          },
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-04T20:03:46Z",
+          "updatedAt": "2021-08-04T20:03:46Z",
+          "comments": [
+            {
+              "originalPosition": 10,
+              "body": "They don't know, and don't have to know. You only hit trial decryption if, within a set of active configs *on the same client-facing server*, there is a config ID collision. The backend doesn't deal with configs in the first place.",
+              "createdAt": "2021-08-04T20:03:46Z",
+              "updatedAt": "2021-08-04T20:10:42Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIyNjkwNDUy",
+          "commit": {
+            "abbreviatedOid": "ef07fea"
+          },
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-04T20:05:58Z",
+          "updatedAt": "2021-08-04T20:05:59Z",
+          "comments": [
+            {
+              "originalPosition": 10,
+              "body": "Sure. trial decryption is fine. The issue is that the sentence I suggest removing seems to me to claim that one can avoid config_id collisions in the DNS if you iterate the random picking. But that's not the case. ",
+              "createdAt": "2021-08-04T20:05:58Z",
+              "updatedAt": "2021-08-04T20:05:59Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIyNjkxNTgz",
+          "commit": {
+            "abbreviatedOid": "ef07fea"
+          },
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-04T20:07:27Z",
+          "updatedAt": "2021-08-04T20:07:28Z",
+          "comments": [
+            {
+              "originalPosition": 10,
+              "body": "If one changed that sentence via s/any valid ECHConfig/any known ECHConfig/ it'd be correct I guess. ",
+              "createdAt": "2021-08-04T20:07:27Z",
+              "updatedAt": "2021-08-04T20:07:28Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIyNjkzMjYz",
+          "commit": {
+            "abbreviatedOid": "ef07fea"
+          },
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-04T20:09:37Z",
+          "updatedAt": "2021-08-04T20:09:38Z",
+          "comments": [
+            {
+              "originalPosition": 13,
+              "body": "Yes, the backend and client-facing servers do need to work out how they delegate this information. This has nothing to do with config_ids. The keys are a property of the client-facing server, one that will rotate over time, and the backend's DNS needs to somehow present those keys.\r\n\r\nIf the backend server and client-facing server share enough infrastructure (particularly shared versions of Shared Mode), maybe the client-facing server's provisioning process is able to directly configures the backend server's DNS. More likely, I expect the backend server will delegate the name with a CNAME or AliasForm HTTPS record.\r\n\r\nThis is the same sort of deployment decisions folks already go through with A/AAAA records.",
+              "createdAt": "2021-08-04T20:09:38Z",
+              "updatedAt": "2021-08-04T20:10:01Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIyNjk1NDY5",
+          "commit": {
+            "abbreviatedOid": "ef07fea"
+          },
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-04T20:12:16Z",
+          "updatedAt": "2021-08-04T20:12:16Z",
+          "comments": [
+            {
+              "originalPosition": 13,
+              "body": "Sorry, but doesn't the protocol need to support the case where the split-mode backend's DNS operator is independent of all client-facing servers? If not, I've a problem with that. If so, then we can get config_id collisions, even if those aren't much of a problem. (We are after all only arguing here about the example to illustrate a SHOULD so it's not the end of the world:-)",
+              "createdAt": "2021-08-04T20:12:16Z",
+              "updatedAt": "2021-08-04T20:12:16Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIyNzA2NDY3",
+          "commit": {
+            "abbreviatedOid": "ef07fea"
+          },
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-04T20:25:53Z",
+          "updatedAt": "2021-08-04T20:25:53Z",
+          "comments": [
+            {
+              "originalPosition": 10,
+              "body": "The DNS isn't the scope we care about for collisions in the first place. It sounds like there's some misunderstanding here as to what the config_id is even for. I agree the current text is not right. However, this PR does not fix it. \"Any known ECHConfig\" is also weird after you've rotated 256 times.\r\n\r\nLet's take a step back here: we're encrypting a message for the client-facing server, which then dispatches to a backend server. An ECHConfig is a property of the client-facing server. It's the one generating the keys, etc. In fact, the backend server may not even have the key.\r\n\r\nIn the DNS, we *typically* only need one ECHConfig per route, because the client is ultimately going to just pick one. The multiplicity in the ECHConfigList is purely so a client-facing server can simultaneously support draft-13 and the final draft, or X25519 and fancy-future-post-quantum-KEM.\r\n\r\nHowever, we never design systems with unrotatable keys. That means, at some point, the client-facing server is going to generate a new a key and update DNS. DNS is cached, TTLs are lies, etc., so old DNS entries may still be used for a while after rotation.\r\n\r\nThat means the client-facing server needs to support a _window_ of ECHConfigs, perhaps the last week or so's worth, to avoid service interrupts. This window is *larger* than what's in DNS because, again, DNS only really needs the current ones.\r\n\r\nWhen the client-facing server gets a ClientHello, it needs to know which of those to use. It can either trial-decrypt, or it can filter on config_id. Trial decryption means, for every config you keep around, you have to do that many HPKE operations. That is poor performance and a DoS risk. Thus, we have a config_id, enough to disambiguate however many entries the client-facing server needs to keep alive. You *can* reuse config_ids, just, if you want to avoid trial decryption, you must have retired the old one first.\r\n\r\nThat means, when a client-facing server generates new keys, it should do so in a way that avoids collisions with any existing *active* ones. Rejection sampling is one strategy. Just incrementing and cycling IDs is another. (TBH, cycling seems simpler.)\r\n\r\nAll of this is relative to one client-facing server. If you use both CDN-A and CDN-B, A and B have separate sets of active keys and separate config ID spaces. There is no need for them to coordinate because we don't care about config_id collisions. CDN-A is never going to try one of CDN-B's keys.\r\n\r\nI'll take a stab at rewriting this.",
+              "createdAt": "2021-08-04T20:25:53Z",
+              "updatedAt": "2021-08-04T20:25:53Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIyNzA4MDc3",
+          "commit": {
+            "abbreviatedOid": "ef07fea"
+          },
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-04T20:27:46Z",
+          "updatedAt": "2021-08-04T20:27:46Z",
+          "comments": [
+            {
+              "originalPosition": 13,
+              "body": "> Sorry, but doesn't the protocol need to support the case where the split-mode backend's DNS operator is independent of all client-facing servers?\r\n\r\nThat's what CNAMEs and AliasForm records are for, no? Or do you mean independent as in without any pointers to the client-facing server at all? Even without ECHConfigs, you need to point at the client-facing server's A/AAAA records, no?\r\n\r\n>  If so, then we can get config_id collisions, even if those aren't much of a problem?\r\n\r\nAgain, collisions across client-facing servers aren't relevant to the protocol at all. See my comment above. I think you are misunderstanding what this is even doing.",
+              "createdAt": "2021-08-04T20:27:46Z",
+              "updatedAt": "2021-08-04T20:27:46Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIyNzEwNjA0",
+          "commit": {
+            "abbreviatedOid": "ef07fea"
+          },
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-04T20:30:41Z",
+          "updatedAt": "2021-08-04T20:30:42Z",
+          "comments": [
+            {
+              "originalPosition": 10,
+              "body": "I agree with all the above except the misunderstanding bit:-) The \"no need for them to co-ordinate\" at the end is important IMO and one reason the original \"MUST not publish collisions\" was wrong. s/MUST/SHOULD/ and s/valid/known active/ would be enough of a fix for me fwiw if you prefer minimalism:-)",
+              "createdAt": "2021-08-04T20:30:42Z",
+              "updatedAt": "2021-08-04T20:30:42Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIyNzE5ODcy",
+          "commit": {
+            "abbreviatedOid": "ef07fea"
+          },
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-04T20:42:12Z",
+          "updatedAt": "2021-08-04T20:42:13Z",
+          "comments": [
+            {
+              "originalPosition": 13,
+              "body": "Collisions across client-facing servers would be relevant if the MUST not publish remained. I don't believe I'm misunderstanding config_id thanks:-)\r\n\r\nCNAMEs etc are one way of doing things and likely will be most used.  But a backend is not in a position to say to a likely much larger CDN - hey please change your config_id because that other big CDN used the same one;-) So if we want the protocol to allow the backend to choose any DNS operator (unrelated to all CDNs) then the MUST NOT was wrong but so was the assumption that one CDN could entirely avoid config_id collisions *in the DNS* via iteration at key gen time.",
+              "createdAt": "2021-08-04T20:42:12Z",
+              "updatedAt": "2021-08-04T20:42:13Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIyNzI1MDIz",
+          "commit": {
+            "abbreviatedOid": "ef07fea"
+          },
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-04T20:48:30Z",
+          "updatedAt": "2021-08-04T20:48:31Z",
+          "comments": [
+            {
+              "originalPosition": 13,
+              "body": "Ah yeah, the sentence is just wrong all around. :-) It both should be a SHOULD, not a MUST, but the SHOULD is also wrong because it should be about an individual client-facing server, and not the backend at all.\r\n\r\n(I'm reworking that text now, which hopefully avoids this. Will upload a PR when that's done.)",
+              "createdAt": "2021-08-04T20:48:30Z",
+              "updatedAt": "2021-08-04T20:48:31Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 488,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzAzOTEzNjY3",
+      "title": "sensible-pickers",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/488",
+      "state": "OPEN",
+      "author": "sftcd",
+      "authorAssociation": "COLLABORATOR",
+      "assignees": [],
+      "labels": [],
+      "body": "Not sure if this is needed, but I guess it would be another way to generate failures;-)",
+      "createdAt": "2021-08-04T19:37:04Z",
+      "updatedAt": "2021-08-04T19:37:04Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "7e79d8571880b6c87080d7fc86b370d00141b3d6",
+      "headRepository": "sftcd/draft-ietf-tls-esni",
+      "headRefName": "sensible-pickers",
+      "headRefOid": "fd8ad7131b85c7f4d77b6e731de0f5f71827d751",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [],
+      "reviews": []
+    },
+    {
+      "number": 489,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzAzOTYzMDQ1",
+      "title": "fe0c->fe0d",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/489",
+      "state": "CLOSED",
+      "author": "sftcd",
+      "authorAssociation": "COLLABORATOR",
+      "assignees": [],
+      "labels": [],
+      "body": "This'd probably have been caught but just in case:-)",
+      "createdAt": "2021-08-04T20:21:54Z",
+      "updatedAt": "2021-08-04T20:23:16Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "722f5e9175c9adb154ec54d74762cc2707c0546b",
+      "headRepository": "sftcd/draft-ietf-tls-esni",
+      "headRefName": "codepoint",
+      "headRefOid": "2aea6469c3373639e4fa839828bca6e02da1f682",
+      "closedAt": "2021-08-04T20:22:56Z",
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [
+        {
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "body": "and indeed it was:-)",
+          "createdAt": "2021-08-04T20:22:56Z",
+          "updatedAt": "2021-08-04T20:22:56Z"
+        },
+        {
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "body": ":-)",
+          "createdAt": "2021-08-04T20:23:16Z",
+          "updatedAt": "2021-08-04T20:23:16Z"
+        }
+      ],
+      "reviews": []
+    },
+    {
+      "number": 490,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzA0MDIzNTU3",
+      "title": "Clarify a bit why server might send retry configs",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/490",
+      "state": "OPEN",
+      "author": "sftcd",
+      "authorAssociation": "COLLABORATOR",
+      "assignees": [],
+      "labels": [],
+      "body": "Current text seemed a bit opaque as to why a server might send retry configs.",
+      "createdAt": "2021-08-04T21:14:32Z",
+      "updatedAt": "2021-08-04T21:14:32Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "722f5e9175c9adb154ec54d74762cc2707c0546b",
+      "headRepository": "sftcd/draft-ietf-tls-esni",
+      "headRefName": "maydoretry",
+      "headRefOid": "4bc62d0c284520cad912e469216febb3daec99cf",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [],
+      "reviews": []
+    },
+    {
+      "number": 491,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzA0MDQwODcz",
+      "title": "Expand on config_ids.",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/491",
+      "state": "OPEN",
+      "author": "davidben",
+      "authorAssociation": "CONTRIBUTOR",
+      "assignees": [],
+      "labels": [],
+      "body": "@sftcd, how does this look to you?\r\n\r\nThe discussion on how to allocate config_ids made it very unclear\r\nwhether we cared about collisions in DNS or across client-facing\r\nservers. (The former is insufficient and the latter is practically\r\nimpossible.) Instead, pull this into a separate section, so we can be\r\nclear this is a recommendation for the client-facing server and the\r\nbackend server.\r\n\r\nAlso downgrade from MUST to SHOULD because collisions work fine, just\r\ndon't perform as well.\r\n\r\nIt was also weird that we talked about config_id in not the section\r\nabout config_ids, but in the little side note about HpkeKeyConfig.",
+      "createdAt": "2021-08-04T21:28:56Z",
+      "updatedAt": "2021-08-04T21:33:25Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "722f5e9175c9adb154ec54d74762cc2707c0546b",
+      "headRepository": "davidben/draft-ietf-tls-esni",
+      "headRefName": "config-ids",
+      "headRefOid": "cd04387f1923a93a4bb7082942329995c2706088",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [
+        {
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "body": "I went with \"known\" instead of \"active\" since {{client-facing-server}} already used \"known\". It just never defined it, so I guess now we have a definition or sorts. :-)",
+          "createdAt": "2021-08-04T21:30:18Z",
+          "updatedAt": "2021-08-04T21:30:18Z"
+        },
+        {
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "body": "\n\nOn 04/08/2021 22:29, David Benjamin wrote:\n> @sftcd, how does this look to you?\n\nThat looks good, better than I'd suggested.\n\nI guess I'll close the other one in a few minutes (just to\ngive someone time to correct me that that's not the right\nbutton-pushing:-)\n\nThanks,\nS.\n\n> \n> The discussion on how to allocate config_ids made it very unclear\n> whether we cared about collisions in DNS or across client-facing\n> servers. (The former is insufficient and the latter is practically\n> impossible.) Instead, pull this into a separate section, so we can be\n> clear this is a recommendation for the client-facing server and the\n> backend server.\n> \n> Also downgrade from MUST to SHOULD because collisions work fine, just\n> don&#39;t perform as well.\n> \n> It was also weird that we talked about config_id in not the section\n> about config_ids, but in the little side note about HpkeKeyConfig.\n> You can view, comment on, or merge this pull request online at:\n> \n>    https://github.com/tlswg/draft-ietf-tls-esni/pull/491\n> \n> -- Commit Summary --\n> \n>    * Expand on config_ids.\n> \n> -- File Changes --\n> \n>      M draft-ietf-tls-esni.md (32)\n> \n> -- Patch Links --\n> \n> https://github.com/tlswg/draft-ietf-tls-esni/pull/491.patch\n> https://github.com/tlswg/draft-ietf-tls-esni/pull/491.diff\n> \n",
+          "createdAt": "2021-08-04T21:33:25Z",
+          "updatedAt": "2021-08-04T21:33:25Z"
+        }
+      ],
+      "reviews": []
+    },
+    {
+      "number": 492,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzA0MDYzNzQw",
+      "title": "Bit more text on nominal backend processing",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/492",
+      "state": "OPEN",
+      "author": "sftcd",
+      "authorAssociation": "COLLABORATOR",
+      "assignees": [],
+      "labels": [],
+      "body": "A description of handling this case seemed to be missing as I read through the draft. (It may be stated later, not sure, if so I'll close this.) \r\n\r\nThis does raise the knotty issue of protecting the ClientHelloInner between the client-facing server and backend, but I guess the best can say for now is just that we're not defining protocol for that here/now.",
+      "createdAt": "2021-08-04T21:46:16Z",
+      "updatedAt": "2021-08-04T22:41:31Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "722f5e9175c9adb154ec54d74762cc2707c0546b",
+      "headRepository": "sftcd/draft-ietf-tls-esni",
+      "headRefName": "nominalbackend",
+      "headRefOid": "67cb5ead1d84294169c4854bd0cdabb209344d85",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [
+        {
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "body": "I _think_ it's already in here, but the draft certainly could do with an editorial pass to make this clearer. (I made an attempt to clean up some of the client earlier, but I didn't get to the server.) The text is kinda scattered all over the place. Here's my read:\r\n\r\n* If you're a server, the Server Behavior section applies to you\r\n* If you see type `inner`, that section says to jump to the Backend Server section\r\n* That section says you do the `accept_confirmation` thingy, but otherwise doesn't modify the handshake.\r\n\r\nIt is likely the case that, as you say, you got something from a client-facing server. Although it's also possible the client decided to send you the extension for no particularly coherent reason. Folks wanted Split Mode to work without direct client-facing/backend coordination, so... okay we all that. :-)",
+          "createdAt": "2021-08-04T22:26:19Z",
+          "updatedAt": "2021-08-04T22:26:19Z"
+        },
+        {
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "body": "Yeah, I'll just close this if it turns out not needed but in a linear reading, it seemed missing. \r\n\r\nWRT seeing inner as a backend (or ech_is_inner in my draft-10 code) - for the split mode backend I ended up making it a configuration setting as to whether the server will barf on that or assume it's come from a client-facing server so that'd kinda mean such server instances need to run on their own port maybe, just for tidiness. But I'm not sure what a misbehaving client might win from directly connecting to a backend and pretending to be a client-facing server. One for the security analysis to cover maybe. ",
+          "createdAt": "2021-08-04T22:41:31Z",
+          "updatedAt": "2021-08-04T22:41:31Z"
+        }
+      ],
+      "reviews": []
+    },
+    {
+      "number": 493,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzA0MTA1MDY0",
+      "title": "A bit more text to introduce EncodedClientHelloInner",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/493",
+      "state": "OPEN",
+      "author": "sftcd",
+      "authorAssociation": "COLLABORATOR",
+      "assignees": [],
+      "labels": [],
+      "body": "Could probably be done lots of other ways but something like this seems needed to introduce EncodedClientHelloInner.",
+      "createdAt": "2021-08-04T22:23:42Z",
+      "updatedAt": "2021-08-04T22:27:28Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "722f5e9175c9adb154ec54d74762cc2707c0546b",
+      "headRepository": "sftcd/draft-ietf-tls-esni",
+      "headRefName": "eci",
+      "headRefOid": "4c13885acfead77d2ae25c18093487e18e41c01e",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [
+        {
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "body": "oops - ignore the 1st block of changes those are from another PR",
+          "createdAt": "2021-08-04T22:27:27Z",
+          "updatedAt": "2021-08-04T22:27:27Z"
+        }
+      ],
+      "reviews": []
+    },
+    {
+      "number": 494,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzA0MTg5Mzgy",
+      "title": "config IDs aren't really optional",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/494",
+      "state": "CLOSED",
+      "author": "sftcd",
+      "authorAssociation": "COLLABORATOR",
+      "assignees": [],
+      "labels": [],
+      "body": "Maybe calling 'em random is better?",
+      "createdAt": "2021-08-04T23:54:46Z",
+      "updatedAt": "2021-08-04T23:56:31Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "722f5e9175c9adb154ec54d74762cc2707c0546b",
+      "headRepository": "sftcd/draft-ietf-tls-esni",
+      "headRefName": "randomconfigid",
+      "headRefOid": "175c3c899a93a640e051a3f9e886d0861b98f65b",
+      "closedAt": "2021-08-04T23:56:31Z",
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [
+        {
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "body": "Feck - mucked up the branch again, will close and open another.",
+          "createdAt": "2021-08-04T23:56:31Z",
+          "updatedAt": "2021-08-04T23:56:31Z"
+        }
+      ],
+      "reviews": []
+    },
+    {
+      "number": 495,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzA0MjA2MzQ2",
+      "title": "optional configids seems wrong, maybe random is better?",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/495",
+      "state": "OPEN",
+      "author": "sftcd",
+      "authorAssociation": "COLLABORATOR",
+      "assignees": [],
+      "labels": [],
+      "body": "minor suggested change",
+      "createdAt": "2021-08-05T00:14:21Z",
+      "updatedAt": "2021-08-05T00:14:21Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "722f5e9175c9adb154ec54d74762cc2707c0546b",
+      "headRepository": "sftcd/draft-ietf-tls-esni",
+      "headRefName": "randomconfigid",
+      "headRefOid": "041fd2652a86eba155be68a91a543a260f88ea04",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [],
+      "reviews": []
     }
   ]
 }
