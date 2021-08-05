@@ -5,11 +5,11 @@
 tls                                                          E. Rescorla
 Internet-Draft                                                RTFM, Inc.
 Intended status: Standards Track                                  K. Oku
-Expires: 5 February 2022                                          Fastly
+Expires: 6 February 2022                                          Fastly
                                                              N. Sullivan
                                                                C.A. Wood
                                                               Cloudflare
-                                                           4 August 2021
+                                                           5 August 2021
 
 
                        TLS Encrypted Client Hello
@@ -43,7 +43,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 5 February 2022.
+   This Internet-Draft will expire on 6 February 2022.
 
 Copyright Notice
 
@@ -270,9 +270,8 @@ Table of Contents
 
 4.  Encrypted ClientHello Configuration
 
-   ECH uses draft-08 of HPKE for public key encryption
-   [I-D.irtf-cfrg-hpke].  The ECH configuration is defined by the
-   following "ECHConfig" structure.
+   ECH uses HPKE for public key encryption [I-D.irtf-cfrg-hpke].  The
+   ECH configuration is defined by the following "ECHConfig" structure.
 
        opaque HpkePublicKey<1..2^16-1>;
        uint16 HpkeKemId;  // Defined in I-D.irtf-cfrg-hpke
@@ -1834,9 +1833,9 @@ Table of Contents
    [HTTPS-RR] Schwartz, B., Bishop, M., and E. Nygren, "Service binding
               and parameter specification via the DNS (DNS SVCB and
               HTTPS RRs)", Work in Progress, Internet-Draft, draft-ietf-
-              dnsop-svcb-https-06, 16 June 2021,
+              dnsop-svcb-https-07, 5 August 2021,
               <https://datatracker.ietf.org/doc/html/draft-ietf-dnsop-
-              svcb-https-06>.
+              svcb-https-07>.
 
    [I-D.ietf-tls-exported-authenticator]
               Sullivan, N., "Exported Authenticators in TLS", Work in
