@@ -5,11 +5,11 @@
 tls                                                          E. Rescorla
 Internet-Draft                                                RTFM, Inc.
 Intended status: Standards Track                                  K. Oku
-Expires: 6 February 2022                                          Fastly
+Expires: 7 February 2022                                          Fastly
                                                              N. Sullivan
                                                                C.A. Wood
                                                               Cloudflare
-                                                           5 August 2021
+                                                           6 August 2021
 
 
                        TLS Encrypted Client Hello
@@ -43,7 +43,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 6 February 2022.
+   This Internet-Draft will expire on 7 February 2022.
 
 Copyright Notice
 
@@ -579,7 +579,7 @@ Table of Contents
       OuterExtensions do not occur in the same order.
 
    Implementations SHOULD bound the time to compute a ClientHelloInner
-   proportionally to the ClientHelloOuter size.  If the cost are
+   proportionally to the ClientHelloOuter size.  If the cost is
    disproportionately large, a malicious client could exploit this in a
    denial of service attack.  Appendix B describes a linear-time
    procedure that may be used for this purpose.
@@ -796,7 +796,7 @@ Table of Contents
 
    By way of example, clients typically support a small number of
    application profiles.  For instance, a browser might support HTTP
-   with ALPN values ["http/1.1, "h2"] and WebRTC media with ALPNs
+   with ALPN values ["http/1.1", "h2"] and WebRTC media with ALPNs
    ["webrtc", "c-webrtc"].  Clients SHOULD pad this extension by
    rounding up to the total size of the longest ALPN extension across
    all application profiles.  The target padding length of most
@@ -853,7 +853,7 @@ Table of Contents
    aborts the handshake with a "decode_error" alert.  Otherwise, the
    client computes "hrr_accept_confirmation" as described in
    Section 7.2.1.  If this value matches the extension payload, the
-   server has accept ECH.  Otherwise, it has rejected ECH.
+   server has accepted ECH.  Otherwise, it has rejected ECH.
 
    [[OPEN ISSUE: Depending on what we do for issue#450, it may be
    appropriate to change the client behavior if the HRR extension is
@@ -1355,8 +1355,8 @@ Table of Contents
    client-facing servers should use the same ECHConfig for as many hosts
    as possible.  An attacker can distinguish two hosts that have
    different ECHConfig values based on the ECHClientHello.config_id
-   value.  This also means public information in a TLS handshake is also
-   consistent across hosts.  For example, if a client-facing server
+   value.  This also means public information in a TLS handshake should
+   be consistent across hosts.  For example, if a client-facing server
    services many backend origin hosts, only one of which supports some
    cipher suite, it may be possible to identify that host based on the
    contents of unencrypted handshake messages.
@@ -1380,9 +1380,9 @@ Table of Contents
    the ECH record from the response.  However, in the face of an
    attacker that controls DNS, no encryption scheme can work because the
    attacker can replace the IP address, thus blocking client
-   connections, or substituting a unique IP address which is 1:1 with
-   the DNS name that was looked up (modulo DNS wildcards).  Thus,
-   allowing the ECH records in the clear does not make the situation
+   connections, or substitute a unique IP address which is 1:1 with the
+   DNS name that was looked up (modulo DNS wildcards).  Thus, allowing
+   the ECH records in the clear does not make the situation
    significantly worse.
 
    Clearly, DNSSEC (if the client validates and hard fails) is a defense
@@ -1729,7 +1729,7 @@ Table of Contents
    forwards a legitimate ClientHello with an "encrypted_client_hello"
    (ech) extension to the server, which triggers a legitimate
    HelloRetryRequest in return.  Rather than forward the retry to the
-   client, the attacker, attempts to generate its own ClientHello in
+   client, the attacker attempts to generate its own ClientHello in
    response based on the contents of the first ClientHello and
    HelloRetryRequest exchange with the result that the server encrypts
    the Certificate to the attacker.  If the server used the SNI from the
