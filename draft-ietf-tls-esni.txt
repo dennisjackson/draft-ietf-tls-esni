@@ -488,8 +488,8 @@ Table of Contents
 
    retry_configs  An ECHConfigList structure containing one or more
       ECHConfig structures, in decreasing order of preference, to be
-      used by the client in subsequent connection attempts.  These are
-      known as the server's "retry configurations".
+      used by the client as described in Section 6.1.6.  These are known
+      as the server's "retry configurations".
 
    Finally, when the client offers the "encrypted_client_hello", if the
    payload is the "inner" variant and the server responds with
