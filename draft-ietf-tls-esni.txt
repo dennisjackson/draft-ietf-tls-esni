@@ -198,6 +198,7 @@ Table of Contents
                    |                     |
                    +---------------------+
                            Server
+             (Client-Facing and Backend Combined)
 
                        Figure 1: Shared Mode Topology
 
