@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2021-08-05T00:53:35.827570+00:00",
+  "timestamp": "2021-08-08T00:53:18.201450+00:00",
   "repo": "tlswg/draft-ietf-tls-esni",
   "labels": [
     {
@@ -11162,6 +11162,89 @@
           "body": "\n\nOn 22/07/2021 07:35, David Benjamin wrote:\n> I think this is something we should defer.\n\n+1\n\nI wonder would it be useful to see if the TLS WG\nhad consensus on something like \"no more changes\nfor ECH for now, (except security fixes if needed)\"\nmaybe with an additional \"the WG will revisit ECH\na year or so after publication-requested to see\nwhat changes based on deployment experience might\nbe good\"\n\nS.\n\n",
           "createdAt": "2021-07-22T10:02:40Z",
           "updatedAt": "2021-07-22T10:02:40Z"
+        }
+      ]
+    },
+    {
+      "number": 512,
+      "id": "MDU6SXNzdWU5NjIyNzgzMTQ=",
+      "title": "Lessen possibility of client implementation choices undermining GREASE cover",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/issues/512",
+      "state": "OPEN",
+      "author": "pkelsey",
+      "authorAssociation": "CONTRIBUTOR",
+      "assignees": [],
+      "labels": [],
+      "body": "Section 10.9.4 (Do Not Stick Out) indicates plans \"to deploy GREASE ECH widely enough to disincentivize differential treatment of the real ECH protocol by the network\".  This implies that successfully bootstrapping ECH deployment will necessarily involve significant amounts of GREASE ECH from TLS stacks being operated in a GREASE-only mode, driven by applications that do not have a concept of how they'd configure real ECH.\r\n\r\nGuidance on the construction of GREASE ECH is given in Section 6.2, and it involves selecting the length of the payload field based on \"the size of the EncodedClientHelloInner the client would compute when offering ECH\".  What is the length that the client might compute when offering (real) ECH for clients that may have no sophisticated notion of offering real ECH?  It seems there is plenty of room for implementations to arise which generate GREASE payload lengths that are susceptible to effective differentiation by heuristics simple enough to be within reach of the very lazy attacker of 10.9.4.  Perhaps such implementations use a fixed size 'prototype ClientHello' concept, or use something highly self-similar (e.g., verbatim non-ECH ClientHello contents), or [insert other debacle].  Absent additional guardrails for GREASE ECH construction, there appears to be a risk that knowledge of the extant implementations may be sufficient to provide differentiation capabilities to an attacker who employs only single-connection passive traffic analysis.",
+      "createdAt": "2021-08-05T23:54:33Z",
+      "updatedAt": "2021-08-06T03:41:58Z",
+      "closedAt": null,
+      "comments": [
+        {
+          "author": "cbartle891",
+          "authorAssociation": "COLLABORATOR",
+          "body": "I'm not sure what additional guardrails would suffice for a client who is already content to ignore the current guidance on constructing ECH GREASE.",
+          "createdAt": "2021-08-06T03:41:58Z",
+          "updatedAt": "2021-08-06T03:41:58Z"
+        }
+      ]
+    },
+    {
+      "number": 513,
+      "id": "MDU6SXNzdWU5NjI5Njc5OTE=",
+      "title": "Split mode correlation attacks",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/issues/513",
+      "state": "OPEN",
+      "author": "pkelsey",
+      "authorAssociation": "CONTRIBUTOR",
+      "assignees": [],
+      "labels": [],
+      "body": "(Originating at #509)\r\n\r\nThere appears to be nothing in the document concerning an attacker with a presence on both side of the client-facing server in split mode defeating ECH privacy by correlating connections across the client-facing server.\r\n\r\nConsider an attacker present on both sides of a client-facing server whose goal is to uncover which backend server(s) specific ECH-using clients are accessing.  By virtue of its position in the network, this attacker:\r\n\r\n1. Can, through passive observation of the traffic on the client side of the client-facing server, maintain a list of ECH connections initiated by each client identity of interest to the client-facing server (client identity based on the available information: transport addressing, ClientHelloOuter parameters that are in the plain, protocol timing...).\r\n2. Can, through passive observation of the traffic on the backend-server side of the client-facing server, maintain a list of ECH connections initiated from the client-facing server to the backend servers along with their corresponding SNI values, as at this point ClientHello is ClientHelloInner in the plain. \r\n3. Can uncover the SNI value being used by a particular client connection in list (1) if it can match it to its corresponding connection in list (2).\r\n4. Does not necessarily have to perform this matching in any particular temporal relation to the evolution of the connection in order to achieve its goal.\r\n\r\nAttacks:\r\n\r\n1. Passive flow tagging using time dilation:  At one position, the attacker chooses a target ECH connection and introduces a time dilation between two events (by delaying packets) whose relative timing otherwise has statistics stable enough to reliably detect the injected outlier at the attacker's other position.  The attacker annotates the connection in the list on the side the dilation is inserted with the time of the operation, and annotates the connection list at its other position with the time that outlier timing for that event was detected.  Later, connections are matched when recorded time values for a pair of entries (one from each connection list) are suitably related (the arithmetic left as an exercise for the reader).  One event pair might be observed ClientHello -> ServerHello timing.  Or it could be something more opportunistic, such as the arrival time of two successive records in a large backend server initial flight.  The attacker may be able to enhance the capacity of this attack by using multiple distinguishable dilation values, which would allow it to be applied to multiple connections within the same time window.\r\n2. Non-destructive active flow tagging I: On the client side, the attacker picks a target ECH connection from the client and inserts a change_cipher_spec record consisting of the single byte value 0x1 following ClientHello, and annotates the connection in the client-side list with the time at which the operation was performed.  On the backend-server side, the attacker annotates the entry in its list for the connection on which such a change_cipher_spec is observed with the time at which it is observed.  The attacker controls the interval at which it employs the attack such that given the path delay characteristics and clock synchronization limits, it can successfully match the annotated list entries.  The attacker can enhance the capacity of this attack by employing multiple differentiable time delay values between the ClientHello and the change_cipher_spec it inserts, enabling its use on multiple connections within the same time window.  Such change_cipher_spec records may also be employed by the client for their intended purpose, but the attacker can likely filter them out to protect the fidelity of its attack (and if necessary, unconditionally reinsert them at its position on the other side), as it is unlikely that the client-facing server and the infrastructure behind it require them for correct operation.  Deployed TLS 1.3 implementations that tolerate multiple such change_cipher_spec records would provide an expanded capacity to the attacker as being able to insert a variable number of records would further expand the concurrency space.  This attack could also be run in the other direction.  This attack only requires an active position on one side.\r\n3. Non-destructive active flow tagging II: On any given ECH connection on the client side, after the client-facing server enters forwarding mode, the attacker inserts a fake record whose payload contains a tag identifying it to its other position as such a record as well as indicating an attacker-assigned connection ID.  The client-facing server dutifully forwards the fake record, after which the attacker receives it at its backend-server side position, identifies the tag in the payload, removes the record from the flow, and annotates the associated entry in its connection list with the connection ID.  This could also be implemented as a length extension of otherwise legitimate records, with the additional payload removed at the second position.  This attack could also be run in the other direction.  This attack requires an active position on both sides.\r\n4. Destructive active flow tagging: Once the client-facing server has entered forwarding mode for a given ECH connection, the attacker can overwrite a portion of the payload of an existing record with the tag described in (3), with the same processing of the tag content at the attacker's other position.  As this will cause the connection to be aborted, it would only be useful on a sampling basis.  The attacker may be able to reduce the observability of this attack by opportunistically applying it to alerts it detects through traffic analysis.  This attack could be applied in either direction.  This attack only requires an active position on one side.\r\n\r\n\r\n",
+      "createdAt": "2021-08-06T18:47:40Z",
+      "updatedAt": "2021-08-06T21:39:52Z",
+      "closedAt": null,
+      "comments": [
+        {
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "body": "I don't think (2-4) need to be quite so complicated. If you're assuming that the client-facing server <-> split mode channel is both unencrypted and visible to the attacker, they can just use the fact that every unmodified bit of ciphertext will identify the connection.\r\n\r\nI think, for purposes of split mode, we have to assume that the attacker cannot observe traffic between the client-facing and backend server, either due to visibility (in the shared mode cases, this \"traffic\" doesn't even go over the network) or due to them having their own encrypted channel. Although the latter is still a little fuzzy due to timing, depending on how much traffic goes into the client-facing server.",
+          "createdAt": "2021-08-06T18:55:31Z",
+          "updatedAt": "2021-08-06T18:55:31Z"
+        },
+        {
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "body": "\n\nOn 06/08/2021 19:55, David Benjamin wrote:\n> I don't think (2-4) need to be quite so complicated. If you're\n> assuming that the client-facing server <-> split mode channel is both\n> unencrypted and visible to the attacker, they can just use the fact\n> that every unmodified bit of ciphertext will identify the\n> connection.\n> \n> I think, for purposes of split mode, we have to assume that the\n> attacker cannot observe traffic between the client-facing and backend\n> server, either due to visibility (in the shared mode cases, this\n> \"traffic\" doesn't even go over the network) or due to them having\n> their own encrypted channel. Although the latter is still a little\n> fuzzy due to timing, depending on how much traffic goes into the\n> client-facing server.\n\nI agree. I forget if we already note the basic vulnerability\nor not (we should I guess) but HOWTO secure client-facing to\nbackend traffic is properly work for another day I think. It\ndoes need a pile of work but better that we get started on\nclient to client-facing server experiments first.\n\nS.\n\n\n",
+          "createdAt": "2021-08-06T19:03:34Z",
+          "updatedAt": "2021-08-06T19:03:34Z"
+        },
+        {
+          "author": "pkelsey",
+          "authorAssociation": "CONTRIBUTOR",
+          "body": "> I don't think (2-4) need to be quite so complicated. If you're assuming that the client-facing server <-> split mode channel is both unencrypted and visible to the attacker, they can just use the fact that every unmodified bit of ciphertext will identify the connection.\r\n> \r\n> I think, for purposes of split mode, we have to assume that the attacker cannot observe traffic between the client-facing and backend server, either due to visibility (in the shared mode cases, this \"traffic\" doesn't even go over the network) or due to them having their own encrypted channel. Although the latter is still a little fuzzy due to timing, depending on how much traffic goes into the client-facing server.\r\n\r\nThe assumption currently is that the backend channel in split mode is both unencrypted and visible to the attacker, as that's how the document currently reads, and it was expressed to me in #509 that the security model includes the attacker being located there.  (2-4) are the product of going down a rabbit hole of obtaining purely deterministic results.  I agree that correlation via sampling not-overly-many bytes of ciphertext at the same semantic position in the exchanges seen on both sides would probably be considered by most interested parties to be deterministic-enough.\r\n\r\nI do think it would be helpful to update the document to note that it currently assumes the attacker has no visibility to the client-facing server <-> backend server traffic in split mode.\r\n\r\nRegarding your comment above about dependence of security properties in split mode on traffic load at the client-facing server, for the benefit of those evaluating whether they can rely on ECH in their circumstances, I think the document should be clear as to whether there are scenarios where the assurance of privacy depends on being part of a big enough school of fish.\r\n",
+          "createdAt": "2021-08-06T20:25:31Z",
+          "updatedAt": "2021-08-06T20:25:31Z"
+        },
+        {
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "body": "> The assumption currently is that the backend channel in split mode is both unencrypted and visible to the attacker, as that's how the document currently reads, and it was expressed to me in #509 that the security model includes the attacker being located there.\r\n\r\nSorry, to clarify, the assumption is that the attacker is _present_ on that link, but cannot _read_ data on that link, perhaps because it's encrypted. How that boundary is maintained is a deployment consideration specific to split mode. (As @davidben points out, split doesn't really work at all if the attacker has plaintext access to this link.)\r\n\r\n> I do think it would be helpful to update the document to note that it currently assumes the attacker has no visibility to the client-facing server <-> backend server traffic in split mode.\r\n\r\nThis would be fine, but it is different from saying the attacker is not present there. Any deployment of split mode can't just assume the attacker isn't there. Rather, it should assume the attacker is there, and make sure the client-facing<>backend communication is protected accordingly. (I hope that clarifies my mental model.)",
+          "createdAt": "2021-08-06T20:46:30Z",
+          "updatedAt": "2021-08-06T20:48:58Z"
+        },
+        {
+          "author": "pkelsey",
+          "authorAssociation": "CONTRIBUTOR",
+          "body": "\r\n> Sorry, to clarify, the assumption is that the attacker is _present_ on that link, but cannot _read_ data on that link, perhaps because it's encrypted. How that boundary is maintained is a deployment consideration specific to split mode. (As @davidben points out, split doesn't really work at all if the attacker has plaintext access to this link.)\r\n> \r\n> > I do think it would be helpful to update the document to note that it currently assumes the attacker has no visibility to the client-facing server <-> backend server traffic in split mode.\r\n> \r\n> This would be fine, but it is different from saying the attacker is not present there. Any deployment of split mode can't just assume the attacker isn't there. Rather, it should assume the attacker is there, and make sure the client-facing<>backend communication is protected accordingly. (I hope that clarifies my mental model.)\r\n\r\nAppreciate the clarification on the thinking here.  I agree there is an important difference between not-present and no-visibility, and I'm not advocating for an assumption that the attacker is not on the backend link - #509 was language to highlight the state of the model as currently written.\r\n",
+          "createdAt": "2021-08-06T21:17:34Z",
+          "updatedAt": "2021-08-06T21:17:34Z"
+        },
+        {
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "body": "> Appreciate the clarification on the thinking here. I agree there is an important difference between not-present and no-visibility, and I'm not advocating for an assumption that the attacker is not on the backend link - #509 was language to highlight the state of the model as currently written.\r\n\r\nUnderstood! We could reopen #509 and rephrase it slightly to highlight this difference, and then perhaps say that it can be realized either (1) with encryption, assuming the attacker is everywhere, or (2) by changing network topology such that the attacker is really only present on the client<>client-facing path, as noted by @ekr. \r\n\r\n@pkelsey, what do you think? Would you be willing to refactor that PR to match?",
+          "createdAt": "2021-08-06T21:39:52Z",
+          "updatedAt": "2021-08-06T21:39:52Z"
         }
       ]
     }
@@ -47474,24 +47557,26 @@
       "id": "MDExOlB1bGxSZXF1ZXN0Njk5ODUzNjc0",
       "title": "Allow the client-facing server to GREASE the extension.",
       "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/481",
-      "state": "OPEN",
+      "state": "MERGED",
       "author": "chris-wood",
       "authorAssociation": "COLLABORATOR",
       "assignees": [],
       "labels": [],
       "body": "This assumes the formulation where, on ECH reject, the server is the client-facing server. In other words, backend servers will never get a CH without ECH having been accepted, so GREASE doesn't apply there. \r\n\r\ncc @davidben ",
       "createdAt": "2021-07-29T21:28:53Z",
-      "updatedAt": "2021-08-03T21:38:12Z",
+      "updatedAt": "2021-08-05T22:23:26Z",
       "baseRepository": "tlswg/draft-ietf-tls-esni",
       "baseRefName": "master",
       "baseRefOid": "8b099c334470ffa185d7ec28f09235f705c42342",
       "headRepository": "tlswg/draft-ietf-tls-esni",
       "headRefName": "caw/allow-extension-grease",
       "headRefOid": "febb8fa9a6836b1e02ec319f83154650f8c8b594",
-      "closedAt": null,
-      "mergedAt": null,
-      "mergedBy": null,
-      "mergeCommit": null,
+      "closedAt": "2021-08-05T22:23:26Z",
+      "mergedAt": "2021-08-05T22:23:26Z",
+      "mergedBy": "chris-wood",
+      "mergeCommit": {
+        "oid": "cf4e781e6c3ede230736b9b70ff856c8acbc094a"
+      },
       "comments": [
         {
           "author": "chris-wood",
@@ -47695,7 +47780,7 @@
       "labels": [],
       "body": "As discussed in IETF 111. Blocked on #481.\r\n\r\ncc @martinthomson, @davidben, @cjpatton, @cbartle891, @sftcd ",
       "createdAt": "2021-08-03T17:42:18Z",
-      "updatedAt": "2021-08-03T22:37:47Z",
+      "updatedAt": "2021-08-06T03:45:01Z",
       "baseRepository": "tlswg/draft-ietf-tls-esni",
       "baseRefName": "master",
       "baseRefOid": "7e79d8571880b6c87080d7fc86b370d00141b3d6",
@@ -47706,7 +47791,15 @@
       "mergedAt": null,
       "mergedBy": null,
       "mergeCommit": null,
-      "comments": [],
+      "comments": [
+        {
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "body": "(Noting here that I'll update this with some of @sftcd's changes that landed before merging.)",
+          "createdAt": "2021-08-05T22:58:47Z",
+          "updatedAt": "2021-08-05T22:58:47Z"
+        }
+      ],
       "reviews": [
         {
           "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIxNTYxMjMx",
@@ -47719,6 +47812,19 @@
           "body": "",
           "createdAt": "2021-08-03T19:19:34Z",
           "updatedAt": "2021-08-03T19:19:34Z",
+          "comments": []
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzOTU3MDU2",
+          "commit": {
+            "abbreviatedOid": "70f8f61"
+          },
+          "author": "cbartle891",
+          "authorAssociation": "COLLABORATOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2021-08-06T03:45:01Z",
+          "updatedAt": "2021-08-06T03:45:01Z",
           "comments": []
         }
       ]
@@ -47783,24 +47889,26 @@
       "id": "MDExOlB1bGxSZXF1ZXN0NzAzODM5MzEx",
       "title": "HPKE isn't draft-08 any more",
       "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/484",
-      "state": "OPEN",
+      "state": "MERGED",
       "author": "sftcd",
       "authorAssociation": "COLLABORATOR",
       "assignees": [],
       "labels": [],
       "body": "",
       "createdAt": "2021-08-04T18:38:20Z",
-      "updatedAt": "2021-08-04T18:47:59Z",
+      "updatedAt": "2021-08-05T21:15:19Z",
       "baseRepository": "tlswg/draft-ietf-tls-esni",
       "baseRefName": "master",
       "baseRefOid": "7e79d8571880b6c87080d7fc86b370d00141b3d6",
       "headRepository": "sftcd/draft-ietf-tls-esni",
       "headRefName": "sftcd-patch-1",
       "headRefOid": "395a69a0d7b98f493472a54c96c060bb193c73af",
-      "closedAt": null,
-      "mergedAt": null,
-      "mergedBy": null,
-      "mergeCommit": null,
+      "closedAt": "2021-08-05T21:15:19Z",
+      "mergedAt": "2021-08-05T21:15:19Z",
+      "mergedBy": "chris-wood",
+      "mergeCommit": {
+        "oid": "3152c3e03f1f370352839a9546e8ab17229d5ca0"
+      },
       "comments": [],
       "reviews": [
         {
@@ -47815,6 +47923,19 @@
           "createdAt": "2021-08-04T18:47:59Z",
           "updatedAt": "2021-08-04T18:47:59Z",
           "comments": []
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzODAzOTg1",
+          "commit": {
+            "abbreviatedOid": "395a69a"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2021-08-05T21:15:13Z",
+          "updatedAt": "2021-08-05T21:15:13Z",
+          "comments": []
         }
       ]
     },
@@ -47823,47 +47944,78 @@
       "id": "MDExOlB1bGxSZXF1ZXN0NzAzODUzMjUx",
       "title": "note experiment",
       "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/485",
-      "state": "OPEN",
+      "state": "MERGED",
       "author": "sftcd",
       "authorAssociation": "COLLABORATOR",
       "assignees": [],
       "labels": [],
       "body": "Seems useful to note that -13 should be around for a while but still might change later ",
       "createdAt": "2021-08-04T18:49:45Z",
-      "updatedAt": "2021-08-04T18:49:45Z",
+      "updatedAt": "2021-08-06T00:08:22Z",
       "baseRepository": "tlswg/draft-ietf-tls-esni",
       "baseRefName": "master",
       "baseRefOid": "7e79d8571880b6c87080d7fc86b370d00141b3d6",
       "headRepository": "sftcd/draft-ietf-tls-esni",
       "headRefName": "note-experiments",
-      "headRefOid": "f129c06b2fb2eef092cc06be401fa8e279382ade",
-      "closedAt": null,
-      "mergedAt": null,
-      "mergedBy": null,
-      "mergeCommit": null,
-      "comments": [],
-      "reviews": []
+      "headRefOid": "89faadedf3ae24fad19437fa92c86ca385ed1543",
+      "closedAt": "2021-08-05T21:56:19Z",
+      "mergedAt": "2021-08-05T21:56:19Z",
+      "mergedBy": "chris-wood",
+      "mergeCommit": {
+        "oid": "b4d73e7e1819ae74f935f13b60c38185879cace8"
+      },
+      "comments": [
+        {
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "body": "\n\nOn 05/08/2021 22:56, Christopher Wood wrote:\n> @chris-wood approved this pull request.\n> \n> How about this simplification based on the outcome from 111? I think it's clear that future changes may occur, so I just dropped that.\n> \n>> +production systems. As of the time of publication, this draft is being used\n> +for ongoing experimentation and so may remain stable for some time. Changes\n> +are to be expected though once those experiments and analyses are completed.\n> \n> ```suggestion\n> production systems. This published version of the draft has been designated\n> an \"implementation draft\" for testing and interop purposes.\n\nYeah that's fine.\n\nTa,\nS.\n> ```\n> \n",
+          "createdAt": "2021-08-06T00:08:22Z",
+          "updatedAt": "2021-08-06T00:08:22Z"
+        }
+      ],
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzODI4NTA1",
+          "commit": {
+            "abbreviatedOid": "f129c06"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "APPROVED",
+          "body": "How about this simplification based on the outcome from 111? I think it's clear that future changes may occur, so I just dropped that. ",
+          "createdAt": "2021-08-05T21:55:03Z",
+          "updatedAt": "2021-08-05T21:56:09Z",
+          "comments": [
+            {
+              "originalPosition": 7,
+              "body": "```suggestion\r\nproduction systems. This published version of the draft has been designated\r\nan \"implementation draft\" for testing and interop purposes.\r\n```",
+              "createdAt": "2021-08-05T21:55:03Z",
+              "updatedAt": "2021-08-05T21:56:09Z"
+            }
+          ]
+        }
+      ]
     },
     {
       "number": 486,
       "id": "MDExOlB1bGxSZXF1ZXN0NzAzODcxNTY3",
       "title": "redundant length",
       "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/486",
-      "state": "OPEN",
+      "state": "CLOSED",
       "author": "sftcd",
       "authorAssociation": "COLLABORATOR",
       "assignees": [],
       "labels": [],
       "body": "ECHConfig.length is either redundant or else it needs more explanation. This PR assumes the former. Either's fine by me (my draft-10 code supports >1 key per supplied ECHConfig for obscure API reasons anyway:-). This change notes that the field is currently redundant as there's only one ECHConfigContents per ECHConfig.  If we want to allow >1 ECHConfigContents per ECHConfig then we should say that explicitly here and likely somewhere else too. \r\n\r\nI'd have to look again at the SVCB spec but I think this being redundant also means that a deployment needs to have >1 HTTPS/SVCB RR value to publish more than one key at a time. If that's correct it may be worth noting here somewhere too.",
       "createdAt": "2021-08-04T19:06:14Z",
-      "updatedAt": "2021-08-04T21:25:59Z",
+      "updatedAt": "2021-08-05T12:53:39Z",
       "baseRepository": "tlswg/draft-ietf-tls-esni",
       "baseRefName": "master",
       "baseRefOid": "7e79d8571880b6c87080d7fc86b370d00141b3d6",
       "headRepository": "sftcd/draft-ietf-tls-esni",
       "headRefName": "useless-length",
       "headRefOid": "ce2db58053d55bd477e8d0aec4ff8aec609c44cc",
-      "closedAt": null,
+      "closedAt": "2021-08-05T12:53:39Z",
       "mergedAt": null,
       "mergedBy": null,
       "mergeCommit": null,
@@ -47902,6 +48054,13 @@
           "body": "Fair enough that we disagree that this is unclear as-is and can usefully, simply and easily be improved, but that we don't have to do that:-) \r\n\r\nThe basic problem I think is that issues related to cardinality aren't clearly explained here nor in SVCB and I do think that'll bite some implementer sometime. I'm not fussed as to how exactly we improve that.\r\n\r\n(And I'm not asking for every detail to be explained, I'm commenting while doing a sorta-fresh read through as per list-discussion yesterday.)",
           "createdAt": "2021-08-04T21:25:58Z",
           "updatedAt": "2021-08-04T21:25:58Z"
+        },
+        {
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "body": "Closed in favour of #496 ",
+          "createdAt": "2021-08-05T12:53:39Z",
+          "updatedAt": "2021-08-05T12:53:39Z"
         }
       ],
       "reviews": []
@@ -48212,26 +48371,49 @@
       "id": "MDExOlB1bGxSZXF1ZXN0NzAzOTEzNjY3",
       "title": "sensible-pickers",
       "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/488",
-      "state": "OPEN",
+      "state": "MERGED",
       "author": "sftcd",
       "authorAssociation": "COLLABORATOR",
       "assignees": [],
       "labels": [],
       "body": "Not sure if this is needed, but I guess it would be another way to generate failures;-)",
       "createdAt": "2021-08-04T19:37:04Z",
-      "updatedAt": "2021-08-04T19:37:04Z",
+      "updatedAt": "2021-08-05T22:27:34Z",
       "baseRepository": "tlswg/draft-ietf-tls-esni",
       "baseRefName": "master",
       "baseRefOid": "7e79d8571880b6c87080d7fc86b370d00141b3d6",
       "headRepository": "sftcd/draft-ietf-tls-esni",
       "headRefName": "sensible-pickers",
-      "headRefOid": "fd8ad7131b85c7f4d77b6e731de0f5f71827d751",
-      "closedAt": null,
-      "mergedAt": null,
-      "mergedBy": null,
-      "mergeCommit": null,
+      "headRefOid": "9040bb0e370faa9513b6acc4f203490c18df2213",
+      "closedAt": "2021-08-05T22:27:34Z",
+      "mergedAt": "2021-08-05T22:27:34Z",
+      "mergedBy": "chris-wood",
+      "mergeCommit": {
+        "oid": "dd6febce17490c0309ce60c83fb86296543deb9f"
+      },
       "comments": [],
-      "reviews": []
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzODQ0OTI2",
+          "commit": {
+            "abbreviatedOid": "fd8ad71"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "APPROVED",
+          "body": "Good clarification! This was already somewhat in the real-ech section, so I just replaced this with a forward pointer there. ",
+          "createdAt": "2021-08-05T22:27:03Z",
+          "updatedAt": "2021-08-05T22:27:24Z",
+          "comments": [
+            {
+              "originalPosition": 8,
+              "body": "```suggestion\r\nClientHelloInner. See {{real-ech}} for how clients choose from this list.\r\n```",
+              "createdAt": "2021-08-05T22:27:03Z",
+              "updatedAt": "2021-08-05T22:27:24Z"
+            }
+          ]
+        }
+      ]
     },
     {
       "number": 489,
@@ -48279,50 +48461,75 @@
       "id": "MDExOlB1bGxSZXF1ZXN0NzA0MDIzNTU3",
       "title": "Clarify a bit why server might send retry configs",
       "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/490",
-      "state": "OPEN",
+      "state": "MERGED",
       "author": "sftcd",
       "authorAssociation": "COLLABORATOR",
       "assignees": [],
       "labels": [],
       "body": "Current text seemed a bit opaque as to why a server might send retry configs.",
       "createdAt": "2021-08-04T21:14:32Z",
-      "updatedAt": "2021-08-04T21:14:32Z",
+      "updatedAt": "2021-08-05T22:35:06Z",
       "baseRepository": "tlswg/draft-ietf-tls-esni",
       "baseRefName": "master",
-      "baseRefOid": "722f5e9175c9adb154ec54d74762cc2707c0546b",
+      "baseRefOid": "dd6febce17490c0309ce60c83fb86296543deb9f",
       "headRepository": "sftcd/draft-ietf-tls-esni",
       "headRefName": "maydoretry",
-      "headRefOid": "4bc62d0c284520cad912e469216febb3daec99cf",
-      "closedAt": null,
-      "mergedAt": null,
-      "mergedBy": null,
-      "mergeCommit": null,
+      "headRefOid": "e701a18b98d10cbc84a42a49982044a2b84479e7",
+      "closedAt": "2021-08-05T22:35:06Z",
+      "mergedAt": "2021-08-05T22:35:06Z",
+      "mergedBy": "chris-wood",
+      "mergeCommit": {
+        "oid": "27cc51ad3f295ad76bcf19cbb16c1514c4e5765b"
+      },
       "comments": [],
-      "reviews": []
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzODQ3OTYx",
+          "commit": {
+            "abbreviatedOid": "4bc62d0"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2021-08-05T22:33:40Z",
+          "updatedAt": "2021-08-05T22:33:45Z",
+          "comments": [
+            {
+              "originalPosition": 8,
+              "body": "```suggestion\r\nWhen a client offers the `outer` version of an \"encrypted_client_hello\"\r\nextension, the server MAY include an \"encrypted_client_hello\" extension in its\r\nEncryptedExtensions message, as described in {{client-facing-server}}, with the\r\nfollowing payload:\r\n```\r\n\r\nRather than duplicate text, this just drops a forward pointer to where the rationale is spelled out in more detail.",
+              "createdAt": "2021-08-05T22:33:40Z",
+              "updatedAt": "2021-08-05T22:33:45Z"
+            }
+          ]
+        }
+      ]
     },
     {
       "number": 491,
       "id": "MDExOlB1bGxSZXF1ZXN0NzA0MDQwODcz",
       "title": "Expand on config_ids.",
       "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/491",
-      "state": "OPEN",
+      "state": "MERGED",
       "author": "davidben",
       "authorAssociation": "CONTRIBUTOR",
       "assignees": [],
       "labels": [],
       "body": "@sftcd, how does this look to you?\r\n\r\nThe discussion on how to allocate config_ids made it very unclear\r\nwhether we cared about collisions in DNS or across client-facing\r\nservers. (The former is insufficient and the latter is practically\r\nimpossible.) Instead, pull this into a separate section, so we can be\r\nclear this is a recommendation for the client-facing server and the\r\nbackend server.\r\n\r\nAlso downgrade from MUST to SHOULD because collisions work fine, just\r\ndon't perform as well.\r\n\r\nIt was also weird that we talked about config_id in not the section\r\nabout config_ids, but in the little side note about HpkeKeyConfig.",
       "createdAt": "2021-08-04T21:28:56Z",
-      "updatedAt": "2021-08-04T21:33:25Z",
+      "updatedAt": "2021-08-05T21:42:56Z",
       "baseRepository": "tlswg/draft-ietf-tls-esni",
       "baseRefName": "master",
       "baseRefOid": "722f5e9175c9adb154ec54d74762cc2707c0546b",
       "headRepository": "davidben/draft-ietf-tls-esni",
       "headRefName": "config-ids",
-      "headRefOid": "cd04387f1923a93a4bb7082942329995c2706088",
-      "closedAt": null,
-      "mergedAt": null,
-      "mergedBy": null,
-      "mergeCommit": null,
+      "headRefOid": "0a036dfea07930bd7f78df2192ee7006b5fe5928",
+      "closedAt": "2021-08-05T21:42:56Z",
+      "mergedAt": "2021-08-05T21:42:56Z",
+      "mergedBy": "chris-wood",
+      "mergeCommit": {
+        "oid": "49ff82f0bcf69a596485641e2f2ed3333c4bdaf5"
+      },
       "comments": [
         {
           "author": "davidben",
@@ -48339,7 +48546,34 @@
           "updatedAt": "2021-08-04T21:33:25Z"
         }
       ],
-      "reviews": []
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzODIwNTQw",
+          "commit": {
+            "abbreviatedOid": "cd04387"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2021-08-05T21:41:09Z",
+          "updatedAt": "2021-08-05T21:42:42Z",
+          "comments": [
+            {
+              "originalPosition": 33,
+              "body": "```suggestion\r\nprevious values that may still be in use, since clients may cache DNS records\r\nup to a TTL or longer.\r\n```",
+              "createdAt": "2021-08-05T21:41:09Z",
+              "updatedAt": "2021-08-05T21:42:42Z"
+            },
+            {
+              "originalPosition": 40,
+              "body": "```suggestion\r\nallocate distinct `config_id` values for each ECHConfig in its known set. The\r\nRECOMMENDED strategy is via rejection sampling, i.e., to randomly select\r\n`config_id` repeatedly until it does not match any known ECHConfig.\r\n```",
+              "createdAt": "2021-08-05T21:42:26Z",
+              "updatedAt": "2021-08-05T21:42:43Z"
+            }
+          ]
+        }
+      ]
     },
     {
       "number": 492,
@@ -48353,7 +48587,7 @@
       "labels": [],
       "body": "A description of handling this case seemed to be missing as I read through the draft. (It may be stated later, not sure, if so I'll close this.) \r\n\r\nThis does raise the knotty issue of protecting the ClientHelloInner between the client-facing server and backend, but I guess the best can say for now is just that we're not defining protocol for that here/now.",
       "createdAt": "2021-08-04T21:46:16Z",
-      "updatedAt": "2021-08-04T22:41:31Z",
+      "updatedAt": "2021-08-06T03:46:44Z",
       "baseRepository": "tlswg/draft-ietf-tls-esni",
       "baseRefName": "master",
       "baseRefOid": "722f5e9175c9adb154ec54d74762cc2707c0546b",
@@ -48378,30 +48612,79 @@
           "body": "Yeah, I'll just close this if it turns out not needed but in a linear reading, it seemed missing. \r\n\r\nWRT seeing inner as a backend (or ech_is_inner in my draft-10 code) - for the split mode backend I ended up making it a configuration setting as to whether the server will barf on that or assume it's come from a client-facing server so that'd kinda mean such server instances need to run on their own port maybe, just for tidiness. But I'm not sure what a misbehaving client might win from directly connecting to a backend and pretending to be a client-facing server. One for the security analysis to cover maybe. ",
           "createdAt": "2021-08-04T22:41:31Z",
           "updatedAt": "2021-08-04T22:41:31Z"
+        },
+        {
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "body": "By \"barf on that\", do you mean report an error? I don't believe that is supported by any text in the specification. If you want to make acting as a backend server configurable, the extension should be ignored when off, as is the default with any TLS extension.",
+          "createdAt": "2021-08-05T19:26:01Z",
+          "updatedAt": "2021-08-05T19:26:13Z"
+        },
+        {
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "body": "\nHiya,\n\nOn 05/08/2021 20:26, David Benjamin wrote:\n> By \"barf on that\", do you mean report an error? \n\nWould have to look TBH, but I think so, some sort of\nmalformed extensions error or something.\n\n> I don't believe that\n> is supported by any text in the specification. If you want to make\n> acting as a backend server configurable, the extension should be\n> ignored when off.\n\nGenerally, it is.\n\nBut, again for draft-10, I think I generate an error when I\nencounter ech_is_inner in an outer CH, except if the server\nis explicitly configured as a split-mode backend. (And I\ndo similarly for outer_extensions when not expected.)\n\nI'd likely do the same for draft-13, generating an error on\nECH.type==inner if not configured as a split-mode backend.\n\nBut if there's a good reason to accept such, that'd be ok\ntoo I  think, even if it ought not happen. Is there such a\nreason?\n\n(I don't think Postel's principle applies when one does\nknow the semantics of an extension and you encounter it\nwhen you ought not.)\n\nCheers,\nS.\n\n",
+          "createdAt": "2021-08-05T19:47:11Z",
+          "updatedAt": "2021-08-05T19:47:11Z"
+        },
+        {
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "body": "I'm not sure this is needed, partly for the reasons @davidben points out. If the backend server doesn't recognize the extension, because it simply doesn't have ECH support or if it's not been enabled, the default posture should probably be to ignore the extension and carry on. ",
+          "createdAt": "2021-08-05T22:52:38Z",
+          "updatedAt": "2021-08-05T22:52:38Z"
+        },
+        {
+          "author": "ekr",
+          "authorAssociation": "COLLABORATOR",
+          "body": "I agree with @chris-wood: \"what to do if an extension isn't enabled\" is just basic TLS extension semantics.\r\n",
+          "createdAt": "2021-08-05T22:54:57Z",
+          "updatedAt": "2021-08-05T22:54:57Z"
         }
       ],
-      "reviews": []
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzOTU3NTg4",
+          "commit": {
+            "abbreviatedOid": "67cb5ea"
+          },
+          "author": "cbartle891",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-06T03:46:43Z",
+          "updatedAt": "2021-08-06T03:46:44Z",
+          "comments": [
+            {
+              "originalPosition": 15,
+              "body": "Why does \"`inner`\" get backticks but \"outer\" does not?",
+              "createdAt": "2021-08-06T03:46:43Z",
+              "updatedAt": "2021-08-06T03:46:44Z"
+            }
+          ]
+        }
+      ]
     },
     {
       "number": 493,
       "id": "MDExOlB1bGxSZXF1ZXN0NzA0MTA1MDY0",
       "title": "A bit more text to introduce EncodedClientHelloInner",
       "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/493",
-      "state": "OPEN",
+      "state": "CLOSED",
       "author": "sftcd",
       "authorAssociation": "COLLABORATOR",
       "assignees": [],
       "labels": [],
       "body": "Could probably be done lots of other ways but something like this seems needed to introduce EncodedClientHelloInner.",
       "createdAt": "2021-08-04T22:23:42Z",
-      "updatedAt": "2021-08-04T22:27:28Z",
+      "updatedAt": "2021-08-05T22:19:35Z",
       "baseRepository": "tlswg/draft-ietf-tls-esni",
       "baseRefName": "master",
       "baseRefOid": "722f5e9175c9adb154ec54d74762cc2707c0546b",
       "headRepository": "sftcd/draft-ietf-tls-esni",
       "headRefName": "eci",
       "headRefOid": "4c13885acfead77d2ae25c18093487e18e41c01e",
-      "closedAt": null,
+      "closedAt": "2021-08-05T22:19:35Z",
       "mergedAt": null,
       "mergedBy": null,
       "mergeCommit": null,
@@ -48412,6 +48695,27 @@
           "body": "oops - ignore the 1st block of changes those are from another PR",
           "createdAt": "2021-08-04T22:27:27Z",
           "updatedAt": "2021-08-04T22:27:27Z"
+        },
+        {
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "body": "Nice catch! I actually think we should go further and just straight-up define the structure first. How do you feel about https://github.com/tlswg/draft-ietf-tls-esni/pull/503?",
+          "createdAt": "2021-08-05T17:03:44Z",
+          "updatedAt": "2021-08-05T17:03:44Z"
+        },
+        {
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "body": "\n\nOn 05/08/2021 18:03, David Benjamin wrote:\n> Nice catch! I actually think we should go further and just\n> straight-up define the structure first. How do you feel about\n> https://github.com/tlswg/draft-ietf-tls-esni/pull/503?\n\nLGTM\n\nCheers,\nS.\n\n> \n",
+          "createdAt": "2021-08-05T17:27:01Z",
+          "updatedAt": "2021-08-05T17:27:01Z"
+        },
+        {
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "body": "Closing in favor of #503.",
+          "createdAt": "2021-08-05T22:19:35Z",
+          "updatedAt": "2021-08-05T22:19:35Z"
         }
       ],
       "reviews": []
@@ -48462,7 +48766,7 @@
       "labels": [],
       "body": "minor suggested change",
       "createdAt": "2021-08-05T00:14:21Z",
-      "updatedAt": "2021-08-05T00:14:21Z",
+      "updatedAt": "2021-08-06T16:43:39Z",
       "baseRepository": "tlswg/draft-ietf-tls-esni",
       "baseRefName": "master",
       "baseRefOid": "722f5e9175c9adb154ec54d74762cc2707c0546b",
@@ -48473,8 +48777,1111 @@
       "mergedAt": null,
       "mergedBy": null,
       "mergeCommit": null,
+      "comments": [
+        {
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "body": "\n\nHiya,\n\nOn 05/08/2021 22:50, Christopher Wood wrote:\n> @chris-wood requested changes on this pull request.\n> \n> \n> \n>> `config_id` SHOULD be set to a randomly generated byte in the\n>> first\n> -ClientHelloOuter and MUST be left unchanged for the second\n> ClientHelloOuter. +ClientHelloOuter and, in the event of HRR, MUST be\n> left unchanged for +the second ClientHelloOuter.\n> \n> The intent was to say that optional IDs are to be implemented as\n> random IDs, i.e., if you don't care about IDs (hence optional), \n\nFor me, for a protocol element, \"optional\" means \"not\nincluded\" whereas here we're talking about \"optionally\nignoring the proposed value.\" (Yeah, I probably read\ntoo much ASN.1 once, or even twice:-)\n\n\"Random\" might not be right, but \"optional\" could maybe\nbriefly confuse an implementer.\n\n> then\n> just set them to a random byte. So I'm not inclined to take this\n> change.\n> \n> I _do_ like the clarification to include \"in the event of HRR\" -- can\n> we split that out into a separate PR?\n\nSure. (Not that I know how to do that easily, but feel free\nto just do it, or wait for me to figure it out tomorrow;-)\n\nCheers,\nS.\n\n\n> \n",
+          "createdAt": "2021-08-06T00:07:22Z",
+          "updatedAt": "2021-08-06T00:07:22Z"
+        },
+        {
+          "author": "cbartle891",
+          "authorAssociation": "COLLABORATOR",
+          "body": "> For me, for a protocol element, \"optional\" means \"not\r\n> included\" whereas here we're talking about \"optionally\r\n> ignoring the proposed value.\"\r\n\r\nI agree.",
+          "createdAt": "2021-08-06T03:28:42Z",
+          "updatedAt": "2021-08-06T03:28:42Z"
+        },
+        {
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "body": "It's not possible to omit the config ID (it's a byte). It's only possible to not use it. Optional seems like a fine word to capture that. We could also say that it's unused or ignored? For example:\r\n\r\n```\r\nIf `config_id` is ignored as specified by an application profile or otherwise \r\nexternally configured, `config_id` SHOULD be set to a randomly generated byte\r\nin the first ClientHelloOuter and, in the event of HRR, MUST be left unchanged\r\nfor the second ClientHelloOuter.\r\n```\r\n\r\nOr something, with similar updates to the text and section titles. Would that work?",
+          "createdAt": "2021-08-06T12:45:14Z",
+          "updatedAt": "2021-08-06T16:17:22Z"
+        },
+        {
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "body": "\n\nOn 06/08/2021 13:45, Christopher Wood wrote:\n> It's not possible to omit the config ID (it's a byte). It's only\n> possible to not use it. Optional seems like a fine word to capture\n> that.\n\nInteresting, (but unimportant:-) my take on those facts\nis the opposite.\n\n> We could also say that it's unused or ignored? For example:\n> \n> ``` If `config_id` is unused as specified by an application profile\n> or otherwise externally configured, `config_id` SHOULD be set to a\n> randomly generated byte in the first ClientHelloOuter and, in the\n> event of HRR, MUST be left unchanged for the second\n> ClientHelloOuter. ```\n> \n> Or something, with similar updates to the text and section titles.\n> Would that work?\n\nFor me: \"ignored\" is ok, \"unused\" is as odd as \"optional.\"\n\nCheers,\nS.\n",
+          "createdAt": "2021-08-06T13:02:32Z",
+          "updatedAt": "2021-08-06T13:02:32Z"
+        },
+        {
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "body": "@sftcd updated the proposal above to use \"ignored\". Does that work?",
+          "createdAt": "2021-08-06T16:17:40Z",
+          "updatedAt": "2021-08-06T16:17:40Z"
+        },
+        {
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "body": "\n\nOn 06/08/2021 17:17, Christopher Wood wrote:\n> @sftcd updated the proposal above to use \"ignored\". Does that work?\n\nSure. Thanks,\nS\n\n> \n",
+          "createdAt": "2021-08-06T16:18:20Z",
+          "updatedAt": "2021-08-06T16:18:20Z"
+        },
+        {
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "body": "Great! Could you please update this PR to match?",
+          "createdAt": "2021-08-06T16:43:39Z",
+          "updatedAt": "2021-08-06T16:43:39Z"
+        }
+      ],
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzODI1NzMy",
+          "commit": {
+            "abbreviatedOid": "041fd26"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "CHANGES_REQUESTED",
+          "body": "",
+          "createdAt": "2021-08-05T21:50:08Z",
+          "updatedAt": "2021-08-05T21:50:11Z",
+          "comments": [
+            {
+              "originalPosition": 9,
+              "body": "The intent was to say that optional IDs are to be implemented as random IDs, i.e., if you don't care about IDs (hence optional), then just set them to a random byte. So I'm not inclined to take this change.\r\n\r\nI _do_ like the clarification to include \"in the event of HRR\" -- can we split that out into a separate PR?",
+              "createdAt": "2021-08-05T21:50:08Z",
+              "updatedAt": "2021-08-05T21:50:11Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 496,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzA0Njc5ODQy",
+      "title": "Clarify cardinality via the use of the (non-redudant:-) length field",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/496",
+      "state": "MERGED",
+      "author": "sftcd",
+      "authorAssociation": "COLLABORATOR",
+      "assignees": [],
+      "labels": [],
+      "body": "The goal here is really to provide more clarify about cardinality, if there's a better way or place to do that, that'd be fine.",
+      "createdAt": "2021-08-05T12:53:13Z",
+      "updatedAt": "2021-08-06T00:06:53Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "722f5e9175c9adb154ec54d74762cc2707c0546b",
+      "headRepository": "sftcd/draft-ietf-tls-esni",
+      "headRefName": "clarifylength",
+      "headRefOid": "6ca8b81ec7ec622c4025ef1751d910f7451730d5",
+      "closedAt": "2021-08-05T21:48:01Z",
+      "mergedAt": "2021-08-05T21:48:01Z",
+      "mergedBy": "chris-wood",
+      "mergeCommit": {
+        "oid": "c6620e38a9fcb2cb438a14961be93c4b60bf684f"
+      },
+      "comments": [
+        {
+          "author": "ekr",
+          "authorAssociation": "COLLABORATOR",
+          "body": "I don't believe this is necessary. This idiom is well understood in TLS and this just appears to be excess verbiage.",
+          "createdAt": "2021-08-05T15:30:51Z",
+          "updatedAt": "2021-08-05T15:30:51Z"
+        },
+        {
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "body": "\nHiya,\n\n(As with all these PRs, I'm ok if they're not accepted...)\n\nOn 05/08/2021 22:48, Christopher Wood wrote:\n> @chris-wood approved this pull request.\n> \n> \n> \n>> +: The length, in bytes, of the next field. One primary method of\n> +distributing ECHConfig values is via the DNS\n> +{{!HTTPS-RR=I-D.ietf-dnsop-svcb-https}} where they may be found in HTTPS or\n> +SVCB records that can (and will commonly) contain a list of ECHConfig values\n> +using the ECHConfigList syntax defined below.  This length field allows\n> +implementations to skip over the elements in such a list where they cannot\n> +parse the specific version of ECHConfig.\n> \n> ```suggestion\n> : The length, in bytes, of the next field. This length field allows\n> implementations to skip over the elements in such a list where they cannot\n> parse the specific version of ECHConfig.\n> ```\n\nFor me, that is better than the original, but I do think we\nought state the expected cardinality that implementers need\nto handle somewhere. I reckon it's better to not assume\nimplementers are very familiar with SVCB as for libraries at\nleast, the DNS stuff happens elsewhere. They will have to\nfigure that out eventually, but better to say it somewhere\nexplicitly I think, or we may face some important code base\nthat doesn't handle >1 public key when it ought.\n\nCheers,\nS.\n",
+          "createdAt": "2021-08-06T00:06:53Z",
+          "updatedAt": "2021-08-06T00:06:53Z"
+        }
+      ],
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzODI0Mzk1",
+          "commit": {
+            "abbreviatedOid": "d6889bc"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2021-08-05T21:47:47Z",
+          "updatedAt": "2021-08-05T21:47:51Z",
+          "comments": [
+            {
+              "originalPosition": 11,
+              "body": "```suggestion\r\n: The length, in bytes, of the next field. This length field allows\r\nimplementations to skip over the elements in such a list where they cannot\r\nparse the specific version of ECHConfig.\r\n```",
+              "createdAt": "2021-08-05T21:47:47Z",
+              "updatedAt": "2021-08-05T21:47:51Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 497,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzA0NzAwNDM0",
+      "title": "Try clarify an odd MUST in 6.1.5",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/497",
+      "state": "OPEN",
+      "author": "sftcd",
+      "authorAssociation": "COLLABORATOR",
+      "assignees": [],
+      "labels": [],
+      "body": "6.1.5 says \"This message MUST be syntactically valid.\" I'm not entirely sure what was intended there, so took a stab at clarifying. In any case as-is that sentence doesn't really seem to say anything useful.\r\n\r\nMy suggestion assumes that enc is included as part of the ECH in the AAD used with HRR. Given we omit enc from the 2nd ECH as-sent that seems a bit wrong so may need a few more words.\r\n\r\nNote that the next bullet talks about using the \"emtpy string for enc\" - not sure if \"empty string\" precise enough but if we omit enc from both AAD and ECH (during HRR) we may need align how we describe things. ",
+      "createdAt": "2021-08-05T13:18:12Z",
+      "updatedAt": "2021-08-05T22:46:13Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "722f5e9175c9adb154ec54d74762cc2707c0546b",
+      "headRepository": "sftcd/draft-ietf-tls-esni",
+      "headRefName": "syntaxmust",
+      "headRefOid": "86aa9aaab6f1a54869c105c927def17693ae6505",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [],
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzNDkzNzIz",
+          "commit": {
+            "abbreviatedOid": "86aa9aa"
+          },
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "COMMENTED",
+          "body": "> Note that the next bullet talks about using the \"emtpy string for enc\" - not sure if \"empty string\" precise enough\r\n\r\nThere have been so many iterations over the how to say \"empty string\". I think this is where we settled last time? All the variations seem perfectly understandable to me. Can we please move on?\r\n\r\n> but if we omit enc from both AAD and ECH (during HRR) we may need align how we describe things.\r\n\r\nSince the AAD and ClientHelloOuter are both constructed from the same thing, they'll both always be empty or non-empty.",
+          "createdAt": "2021-08-05T15:22:05Z",
+          "updatedAt": "2021-08-05T15:25:24Z",
+          "comments": [
+            {
+              "originalPosition": 9,
+              "body": "This section doesn't even talk about constructing ClientHelloOuterAAD. Did you mean to cite something else? Though I'm not sure there is anything useful to cite here. I avoided citing {{real-ech}} when reorganizing this because that contains a ton of text specific to the first ClientHello.\r\n\r\n\"MUST be constructed afresh\" also does not seem particularly meaningful or accurate. Ultimately, the ClientHelloOuter wrapper is entirely pointless here. Both sides know it will be ignored. Some clients will find it easiest to apply RFC8446 rules (reuse some code), while others cannot because whether HelloRetryRequest will consistently apply to both depends on complex rules we never managed to write down. (This was the crux of the HelloRetryRequest fuss.) Since we didn't want to define a whole new message without all the extra baggage, this section just says to do whatever. And then maybe we'll learn something about interop needs during experimentation.",
+              "createdAt": "2021-08-05T15:22:05Z",
+              "updatedAt": "2021-08-05T15:25:24Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzNTA5OTgx",
+          "commit": {
+            "abbreviatedOid": "86aa9aa"
+          },
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-05T15:35:45Z",
+          "updatedAt": "2021-08-05T15:35:45Z",
+          "comments": [
+            {
+              "originalPosition": 9,
+              "body": "So what was the intent of the original sentence? Maybe just deleting it would be fine, depending.",
+              "createdAt": "2021-08-05T15:35:45Z",
+              "updatedAt": "2021-08-05T15:35:45Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzNTcwODgz",
+          "commit": {
+            "abbreviatedOid": "86aa9aa"
+          },
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-05T16:35:02Z",
+          "updatedAt": "2021-08-05T16:35:03Z",
+          "comments": [
+            {
+              "originalPosition": 9,
+              "body": "It probably can be dropped. It was mostly just \"the other side should be able to parse it\", which is probably implicit. We're in this weird situation where we're producing a ClientHelloOuter2 that may well not be consistent with ClientHelloOuter1 + HelloRetryRequest. But both sides have agreed it's meaningless... we're only sending it because I guess we haven't defined a better message.\r\n\r\nThere is probably a less goofy design buried in here somewhere. :-)",
+              "createdAt": "2021-08-05T16:35:03Z",
+              "updatedAt": "2021-08-05T16:35:13Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzODUzNDcy",
+          "commit": {
+            "abbreviatedOid": "86aa9aa"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-05T22:46:11Z",
+          "updatedAt": "2021-08-05T22:46:13Z",
+          "comments": [
+            {
+              "originalPosition": 9,
+              "body": "I propose we park this for now and file an issue to ask ourselves if we want a new message for this second CHOuter. @davidben or @sftcd, would one of you mind filing that issue?",
+              "createdAt": "2021-08-05T22:46:11Z",
+              "updatedAt": "2021-08-05T22:46:13Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 498,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzA0NzExOTk3",
+      "title": "retry configs: tweak about subsequent connections ",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/498",
+      "state": "OPEN",
+      "author": "sftcd",
+      "authorAssociation": "COLLABORATOR",
+      "assignees": [],
+      "labels": [],
+      "body": "When retry-configs are defined in section 5 we say they are for \"subsequent connection attempts\" but in 6.1.6 we have a MUST NOT for using those for \"subsequent connections.\" That seems inconsistent and maybe even wrong if one thinks about how e.g. wget can crawl web pages, or how applications might use libcurl, so this change tries to fix that. Not sure if short duration is the right way to phrase it though.",
+      "createdAt": "2021-08-05T13:32:23Z",
+      "updatedAt": "2021-08-05T22:44:10Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "722f5e9175c9adb154ec54d74762cc2707c0546b",
+      "headRepository": "sftcd/draft-ietf-tls-esni",
+      "headRefName": "whatabaoutcrawling",
+      "headRefOid": "090fe34aac683a0bd8b865f7f7783d48bd317776",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [],
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzNTAyMTYy",
+          "commit": {
+            "abbreviatedOid": "090fe34"
+          },
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-05T15:28:50Z",
+          "updatedAt": "2021-08-05T15:28:50Z",
+          "comments": [
+            {
+              "originalPosition": 11,
+              "body": "Using a duration across the entire client application would introduce exactly the tracking vector the text was written to prevent. This allows information to flow across application contexts if, during that duration, two contexts need to talk to the same origin.\r\n\r\nThe intent of this text was that you do it just for exactly the one high-level connection attempt (the client application likely has a \"connect to server with these parameters\" procedure somewhere) and nothing else. That is, you use it _exactly_ once, and within the same application context.\r\n\r\nThat is, \"subsequent connections\" refers to the ones after the retry connection.",
+              "createdAt": "2021-08-05T15:28:50Z",
+              "updatedAt": "2021-08-05T15:28:50Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzNTEzNzQ0",
+          "commit": {
+            "abbreviatedOid": "090fe34"
+          },
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-05T15:39:10Z",
+          "updatedAt": "2021-08-05T15:39:10Z",
+          "comments": [
+            {
+              "originalPosition": 11,
+              "body": "- The existing uses of \"subsequent\" are still conflicting.\r\n- I get the tracking issue, but wonder what'd we expect wget to do if asked to crawl a site? It seems wrong to expect it to try/fail/try-again for every URL and better to use a retry_config that worked for the all the requests corresponding to one command line invocation.\r\n- I agree \"duration\" isn't great though.",
+              "createdAt": "2021-08-05T15:39:10Z",
+              "updatedAt": "2021-08-05T15:39:10Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzNTMzOTQ4",
+          "commit": {
+            "abbreviatedOid": "090fe34"
+          },
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-05T15:58:15Z",
+          "updatedAt": "2021-08-05T15:58:15Z",
+          "comments": [
+            {
+              "originalPosition": 11,
+              "body": "Yup, agreed that the \"subsequent\" is unclear. Sorry, I was just trying to explain the intent, so the PR could rephrase it better.\r\n\r\n> It seems wrong to expect it to try/fail/try-again for every URL and better to use a retry_config that worked for the all the requests corresponding to one command line invocation.\r\n\r\nHTTP connection reuse would smooth it over (which needs to define its tracking vector implications elsewhere) but, yes, there is definitely room to be more permissive here. I wrote this bit originally, and my aim was to write down the simplest thing possible because:\r\n\r\n* At the time, we hadn't resolved the multi-CDN issue, so it was unclear how a sticky signal would work. Now we have, so this is possible to resolve, if we want to. (It's only good for those cached DNS entries.)\r\n* I didn't want to go down a huge rabbithole to define how stickiness would interact with the client application's correlation goals, at least not when introducing an error correction case. As we saw from the other discussion and the introduction of a tracking vector in this PR, tracking is a complex domain-specific problem and people tend to get very confused when you try to actually define it. \ud83d\ude04\r\n\r\nI'm not opposed to defining a more sticky option, though it's no longer an editorial change and we'd need to include solutions to the above problems. (Given it's a lot more fuss, my inclination at the time was to leave it alone until/unless we learn it's a problem.)",
+              "createdAt": "2021-08-05T15:58:15Z",
+              "updatedAt": "2021-08-05T16:01:42Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzNTYxMDYw",
+          "commit": {
+            "abbreviatedOid": "090fe34"
+          },
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-05T16:25:01Z",
+          "updatedAt": "2021-08-05T16:25:01Z",
+          "comments": [
+            {
+              "originalPosition": 11,
+              "body": "So how about saying something like \"clients MUST NOT continue to use an ECHConfig from a set of retry_configs for extended periods - ideally a client would only use such an ECHConfig once and ensure the ensuing TLS session is then used for multiple application messages. Clients SHOULD NOT establish multiple TLS sessions using one such ECHConfig unless there is no additional tracking risk.\"",
+              "createdAt": "2021-08-05T16:25:01Z",
+              "updatedAt": "2021-08-05T16:26:09Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzNTYzNTk4",
+          "commit": {
+            "abbreviatedOid": "090fe34"
+          },
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-05T16:27:36Z",
+          "updatedAt": "2021-08-05T16:27:37Z",
+          "comments": [
+            {
+              "originalPosition": 11,
+              "body": "Oh and btw, it's fair to say part of this isn't editorial and so should just be punted for later.",
+              "createdAt": "2021-08-05T16:27:37Z",
+              "updatedAt": "2021-08-05T16:27:37Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzODUyNDk4",
+          "commit": {
+            "abbreviatedOid": "090fe34"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-05T22:43:52Z",
+          "updatedAt": "2021-08-05T22:43:56Z",
+          "comments": [
+            {
+              "originalPosition": 14,
+              "body": "```suggestion\r\nretry connection. The client MUST NOT use retry configurations for connections\r\nbeyond the retry. This avoids introducing pinning concerns or a tracking \r\nvector, should a malicious server present client-specific retry configurations\r\nin order to identify the client in a subsequent ECH handshake.\r\n```\r\n\r\nHow about this proposal which flips the text around somewhat and avoids the possible confusion around \"subsequent\" connections?",
+              "createdAt": "2021-08-05T22:43:53Z",
+              "updatedAt": "2021-08-05T22:43:56Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzODUyNjI5",
+          "commit": {
+            "abbreviatedOid": "090fe34"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-05T22:44:09Z",
+          "updatedAt": "2021-08-05T22:44:10Z",
+          "comments": [
+            {
+              "originalPosition": 14,
+              "body": "cc @davidben @sftcd ",
+              "createdAt": "2021-08-05T22:44:09Z",
+              "updatedAt": "2021-08-05T22:44:10Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 499,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzA0NzkxNzU0",
+      "title": "trial decryption configuration - \"both sides\" seems wrong",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/499",
+      "state": "MERGED",
+      "author": "sftcd",
+      "authorAssociation": "COLLABORATOR",
+      "assignees": [],
+      "labels": [],
+      "body": "7.1 said to not use trial decryption unless \"externally configured on both sides\" but there's no way to know that, so I think the \"on both sides\" ought be deleted unless something else was intended.",
+      "createdAt": "2021-08-05T15:07:28Z",
+      "updatedAt": "2021-08-05T21:57:27Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "722f5e9175c9adb154ec54d74762cc2707c0546b",
+      "headRepository": "sftcd/draft-ietf-tls-esni",
+      "headRefName": "bothsides",
+      "headRefOid": "1223a2430d4bf323fb21be58da63811675d79e03",
+      "closedAt": "2021-08-05T21:57:27Z",
+      "mergedAt": "2021-08-05T21:57:27Z",
+      "mergedBy": "chris-wood",
+      "mergeCommit": {
+        "oid": "e436a2eaaffe8f42bcfcf5d6bddce558e706237c"
+      },
+      "comments": [],
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzODI5ODEx",
+          "commit": {
+            "abbreviatedOid": "1223a24"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2021-08-05T21:57:23Z",
+          "updatedAt": "2021-08-05T21:57:23Z",
+          "comments": []
+        }
+      ]
+    },
+    {
+      "number": 500,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzA0ODM5MzA2",
+      "title": "ech_retry_requested is a gonner",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/500",
+      "state": "MERGED",
+      "author": "sftcd",
+      "authorAssociation": "COLLABORATOR",
+      "assignees": [],
+      "labels": [],
+      "body": "I'm guessing this is almost a typo.",
+      "createdAt": "2021-08-05T16:09:28Z",
+      "updatedAt": "2021-08-05T21:40:08Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "722f5e9175c9adb154ec54d74762cc2707c0546b",
+      "headRepository": "sftcd/draft-ietf-tls-esni",
+      "headRefName": "ech_retry_requested",
+      "headRefOid": "3adb669d1a0167aa2e3dd9be047e5607e6cbbf02",
+      "closedAt": "2021-08-05T21:40:08Z",
+      "mergedAt": "2021-08-05T21:40:08Z",
+      "mergedBy": "chris-wood",
+      "mergeCommit": {
+        "oid": "a1de0020de9ab72cb14163f5b425f20c86a5d25b"
+      },
+      "comments": [],
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzNTQ3MzMx",
+          "commit": {
+            "abbreviatedOid": "658b7e5"
+          },
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-05T16:10:57Z",
+          "updatedAt": "2021-08-05T16:10:57Z",
+          "comments": [
+            {
+              "originalPosition": 5,
+              "body": "Nice catch! Perhaps:\r\n\r\n> the server will reject ECH and respond with \"retry_configs\"\r\n\r\n(I think, at the time, ech_retry_requested was part of the accept/reject signal.)",
+              "createdAt": "2021-08-05T16:10:57Z",
+              "updatedAt": "2021-08-05T16:10:57Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzNTY0NTAx",
+          "commit": {
+            "abbreviatedOid": "658b7e5"
+          },
+          "author": "sftcd",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-05T16:28:30Z",
+          "updatedAt": "2021-08-05T16:28:30Z",
+          "comments": [
+            {
+              "originalPosition": 5,
+              "body": "Either fix is fine by me. ",
+              "createdAt": "2021-08-05T16:28:30Z",
+              "updatedAt": "2021-08-05T16:28:30Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzODE5NzY3",
+          "commit": {
+            "abbreviatedOid": "658b7e5"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-05T21:39:51Z",
+          "updatedAt": "2021-08-05T21:39:51Z",
+          "comments": [
+            {
+              "originalPosition": 5,
+              "body": "```suggestion\r\nserver will reject ECH and respond with \"retry_configs\". If the server does\r\nnot understand\r\n```",
+              "createdAt": "2021-08-05T21:39:51Z",
+              "updatedAt": "2021-08-05T21:39:51Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzODE5ODY2",
+          "commit": {
+            "abbreviatedOid": "658b7e5"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2021-08-05T21:40:01Z",
+          "updatedAt": "2021-08-05T21:40:01Z",
+          "comments": []
+        }
+      ]
+    },
+    {
+      "number": 501,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzA0ODYxNDQw",
+      "title": "Fix a bit of formatting and remove ref to resolved issue #384",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/501",
+      "state": "MERGED",
+      "author": "sftcd",
+      "authorAssociation": "COLLABORATOR",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2021-08-05T16:42:33Z",
+      "updatedAt": "2021-08-05T21:46:34Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "722f5e9175c9adb154ec54d74762cc2707c0546b",
+      "headRepository": "sftcd/draft-ietf-tls-esni",
+      "headRefName": "formatandabit",
+      "headRefOid": "e846c37670dfd1d3928a1c88869e8c4815d342a6",
+      "closedAt": "2021-08-05T21:46:34Z",
+      "mergedAt": "2021-08-05T21:46:34Z",
+      "mergedBy": "chris-wood",
+      "mergeCommit": {
+        "oid": "3f67240a567443311138115549268d628cc987d9"
+      },
+      "comments": [],
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzNjE0ODMy",
+          "commit": {
+            "abbreviatedOid": "e846c37"
+          },
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2021-08-05T17:22:10Z",
+          "updatedAt": "2021-08-05T17:22:10Z",
+          "comments": []
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzODIzNjQ2",
+          "commit": {
+            "abbreviatedOid": "e846c37"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2021-08-05T21:46:30Z",
+          "updatedAt": "2021-08-05T21:46:30Z",
+          "comments": []
+        }
+      ]
+    },
+    {
+      "number": 502,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzA0ODY1MDM4",
+      "title": "not sure if omitting CH in IANA registry for ech_outer_extensions is right or not",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/502",
+      "state": "CLOSED",
+      "author": "sftcd",
+      "authorAssociation": "COLLABORATOR",
+      "assignees": [],
+      "labels": [],
+      "body": "I don't know and pretty much don't care, but just in case this is an error... One could argue that \"CH\" should be set of ech_outer_extensions. I'm fine if this is just closed without discussion if it's not an error. ",
+      "createdAt": "2021-08-05T16:48:26Z",
+      "updatedAt": "2021-08-05T21:59:57Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "722f5e9175c9adb154ec54d74762cc2707c0546b",
+      "headRepository": "sftcd/draft-ietf-tls-esni",
+      "headRefName": "iana",
+      "headRefOid": "f127384a9346cd96c39ebfcf29a1554e14b15798",
+      "closedAt": "2021-08-05T21:59:57Z",
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [
+        {
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "body": "I think omitting it is better because it's not allowed in any actual ClientHello message. But this depends on whether you believe EncodedClientHelloInner counts as a ClientHello, so either seems defensible. :-)",
+          "createdAt": "2021-08-05T16:57:34Z",
+          "updatedAt": "2021-08-05T16:57:34Z"
+        },
+        {
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "body": "My impression is that we consider EncodedClientHelloInner a transient representation of a ClientHello, but not an actual handshake message, so I think we can safely omit this.",
+          "createdAt": "2021-08-05T21:59:56Z",
+          "updatedAt": "2021-08-05T21:59:56Z"
+        }
+      ],
+      "reviews": []
+    },
+    {
+      "number": 503,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzA0ODc0NDE4",
+      "title": "Define EncodedClientHelloInner before outer extensions.",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/503",
+      "state": "MERGED",
+      "author": "davidben",
+      "authorAssociation": "CONTRIBUTOR",
+      "assignees": [],
+      "labels": [],
+      "body": "Inspired by @sftcd's #493. We can go further and just completely define EncodedClientHelloInner first.",
+      "createdAt": "2021-08-05T17:03:21Z",
+      "updatedAt": "2021-08-05T22:23:11Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "722f5e9175c9adb154ec54d74762cc2707c0546b",
+      "headRepository": "davidben/draft-ietf-tls-esni",
+      "headRefName": "enc-inner-first",
+      "headRefOid": "68b72e1e1613fafdccacd5eba3d8feb604fd86e8",
+      "closedAt": "2021-08-05T22:23:11Z",
+      "mergedAt": "2021-08-05T22:23:10Z",
+      "mergedBy": "chris-wood",
+      "mergeCommit": {
+        "oid": "499448fe90fd2678fc17e4b419537d6eb9d02256"
+      },
+      "comments": [],
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzODQxNzc0",
+          "commit": {
+            "abbreviatedOid": "278644f"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2021-08-05T22:20:08Z",
+          "updatedAt": "2021-08-05T22:22:52Z",
+          "comments": [
+            {
+              "originalPosition": 49,
+              "body": "```suggestion\r\nreduce the size impact, the client MAY substitute extensions which it knows\r\n```",
+              "createdAt": "2021-08-05T22:20:08Z",
+              "updatedAt": "2021-08-05T22:22:52Z"
+            },
+            {
+              "originalPosition": 67,
+              "body": "```suggestion\r\nrelative order. However, there is no requirement that they be contiguous. For\r\n```",
+              "createdAt": "2021-08-05T22:22:41Z",
+              "updatedAt": "2021-08-05T22:22:52Z"
+            },
+            {
+              "originalPosition": 72,
+              "body": "```suggestion\r\nEncodedClientHelloInner, and MUST NOT appear in either ClientHelloOuter or\r\n```",
+              "createdAt": "2021-08-05T22:22:47Z",
+              "updatedAt": "2021-08-05T22:22:52Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 504,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzA1MDg2NDY4",
+      "title": "Fix several typos",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/504",
+      "state": "MERGED",
+      "author": "pkelsey",
+      "authorAssociation": "CONTRIBUTOR",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2021-08-05T23:30:22Z",
+      "updatedAt": "2021-08-06T00:56:09Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "27cc51ad3f295ad76bcf19cbb16c1514c4e5765b",
+      "headRepository": "pkelsey/draft-ietf-tls-esni",
+      "headRefName": "typos",
+      "headRefOid": "832276970ef4abc2dac83d242d21460ae55259c1",
+      "closedAt": "2021-08-06T00:56:09Z",
+      "mergedAt": "2021-08-06T00:56:09Z",
+      "mergedBy": "chris-wood",
+      "mergeCommit": {
+        "oid": "4fc79b477a413a6026e65176796c16fa0c955b7f"
+      },
+      "comments": [],
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzODkzODYx",
+          "commit": {
+            "abbreviatedOid": "8322769"
+          },
+          "author": "davidben",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2021-08-06T00:35:12Z",
+          "updatedAt": "2021-08-06T00:35:12Z",
+          "comments": []
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzOTAwMDg5",
+          "commit": {
+            "abbreviatedOid": "8322769"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2021-08-06T00:54:54Z",
+          "updatedAt": "2021-08-06T00:54:54Z",
+          "comments": []
+        }
+      ]
+    },
+    {
+      "number": 505,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzA1MDg2NzA3",
+      "title": "More accurately describe provider plaintext access",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/505",
+      "state": "MERGED",
+      "author": "pkelsey",
+      "authorAssociation": "CONTRIBUTOR",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2021-08-05T23:31:07Z",
+      "updatedAt": "2021-08-06T12:32:43Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "27cc51ad3f295ad76bcf19cbb16c1514c4e5765b",
+      "headRepository": "pkelsey/draft-ietf-tls-esni",
+      "headRefName": "clarify-provider-plaintext-access",
+      "headRefOid": "023beea3621a27a4c369954ded5ef503fa2b0f79",
+      "closedAt": "2021-08-06T12:32:42Z",
+      "mergedAt": "2021-08-06T12:32:42Z",
+      "mergedBy": "chris-wood",
+      "mergeCommit": {
+        "oid": "7b603e187dc670835ad37617cefadcfcd34a95e6"
+      },
       "comments": [],
       "reviews": []
+    },
+    {
+      "number": 506,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzA1MDg2OTQ5",
+      "title": "Adjust caption of Figure 1",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/506",
+      "state": "MERGED",
+      "author": "pkelsey",
+      "authorAssociation": "CONTRIBUTOR",
+      "assignees": [],
+      "labels": [],
+      "body": "Make it clear at a glance that shared mode is client-facing and\r\nbackend combined, and that both of those terms are operative in each\r\ntopology.",
+      "createdAt": "2021-08-05T23:31:48Z",
+      "updatedAt": "2021-08-06T00:57:36Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "27cc51ad3f295ad76bcf19cbb16c1514c4e5765b",
+      "headRepository": "pkelsey/draft-ietf-tls-esni",
+      "headRefName": "clarify-figure-1",
+      "headRefOid": "6f74c8dbf4234de4ac21ed27af48219edb5a755e",
+      "closedAt": "2021-08-06T00:57:35Z",
+      "mergedAt": "2021-08-06T00:57:35Z",
+      "mergedBy": "chris-wood",
+      "mergeCommit": {
+        "oid": "2c7b34d0c83f364346ca9cb33bc47b114fb89689"
+      },
+      "comments": [],
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzIzOTAwNzkz",
+          "commit": {
+            "abbreviatedOid": "6f74c8d"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2021-08-06T00:57:19Z",
+          "updatedAt": "2021-08-06T00:57:19Z",
+          "comments": []
+        }
+      ]
+    },
+    {
+      "number": 507,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzA1MDg3MjQ2",
+      "title": "Replace broader, conflicting description of client retry_config use...",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/507",
+      "state": "MERGED",
+      "author": "pkelsey",
+      "authorAssociation": "CONTRIBUTOR",
+      "assignees": [],
+      "labels": [],
+      "body": "\u2026with reference to Section 6.1.6\r\n\r\nSee also the discussion on tlswg/draft-ietf-tls-esni#498.",
+      "createdAt": "2021-08-05T23:32:48Z",
+      "updatedAt": "2021-08-06T12:47:01Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "27cc51ad3f295ad76bcf19cbb16c1514c4e5765b",
+      "headRepository": "pkelsey/draft-ietf-tls-esni",
+      "headRefName": "clarify-retry-config-use",
+      "headRefOid": "b62d52830b369287c3dceaa9a593cfca241e5b5c",
+      "closedAt": "2021-08-06T12:47:01Z",
+      "mergedAt": "2021-08-06T12:47:01Z",
+      "mergedBy": "chris-wood",
+      "mergeCommit": {
+        "oid": "f7d85494bab46b6f33ec6b43bb4528d96dc01afe"
+      },
+      "comments": [],
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzI0MzE5NjEx",
+          "commit": {
+            "abbreviatedOid": "b62d528"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2021-08-06T12:46:57Z",
+          "updatedAt": "2021-08-06T12:46:57Z",
+          "comments": []
+        }
+      ]
+    },
+    {
+      "number": 508,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzA1MDg3NTQx",
+      "title": "Rework Handshaking with ClientHelloInner to remove conflicts and...",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/508",
+      "state": "OPEN",
+      "author": "pkelsey",
+      "authorAssociation": "CONTRIBUTOR",
+      "assignees": [],
+      "labels": [],
+      "body": "\u2026eliminate redundancies\r\n\r\n- Avoid restatement by relying on the itemization of conditions that\r\n  constitute ECH rejection given in 6.1.4.\r\n\r\n- The prior text described aborting the connection with an alert,\r\n  *then* processing retry_configs, which processing could then lead to\r\n  additional instructions to abort the (aborted) connection with an\r\n  alert (and possibly a different alert than at first).\r\n\r\n- Remove the use of the \"illegal_parameter\" alert in the case of \"if\r\n  the field contains any other value\", which apparently referred to\r\n  the retry_config version fields.  First, this conflicts with the\r\n  requirement that the connection be aborted with ech_required.\r\n  Second, it's not clear what \"any other value\" is supposed to mean as\r\n  this determination follows determining whether the members of the\r\n  set of values are either \"supported\" or \"unsupported\".  Perhaps it\r\n  meant a value not considered valid as of the specification version\r\n  the client was implemented according to?  Certainly, in the case\r\n  where there is at least one supported version found but also at\r\n  least one such invalid value, it would not be desriable to use an\r\n  illegal_parameter alert, as this situation will naturally arise when\r\n  servers deploying a new ECH version alongside an existing one serve\r\n  clients that have not yet been upgraded.  It's also unclear what\r\n  value client discrimination of unsupported-recognized-as-valid from\r\n  unsupported-not-recognized-as-valid provides.\r\n\r\n- Linearize the presentation.\r\n\r\n- Fix the reference to the obsolete \"ech_retry_request\". (See also\r\n  tlswg/draft-ietf-tls-esni#500).",
+      "createdAt": "2021-08-05T23:33:45Z",
+      "updatedAt": "2021-08-06T21:17:04Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "27cc51ad3f295ad76bcf19cbb16c1514c4e5765b",
+      "headRepository": "pkelsey/draft-ietf-tls-esni",
+      "headRefName": "clarify-handshaking-with-client-hello-outer",
+      "headRefOid": "189896eb24b51227d3e0f64cc49f84f926fb35d4",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [],
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzI0NTI5MjQx",
+          "commit": {
+            "abbreviatedOid": "741736c"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-06T16:32:54Z",
+          "updatedAt": "2021-08-06T16:32:57Z",
+          "comments": [
+            {
+              "originalPosition": 17,
+              "body": "```suggestion\r\nclient then processes the server's response as follows. If the server supplied\r\nan \"encrypted_client_hello\" extension in its EncryptedExtensions message, the\r\nclient MUST check that it is syntactically valid and the client MUST abort the\r\nconnection with a \"decode_error\" alert otherwise. If the extension is valid,\r\nthe client processes the \"retry_configs\" from the extension as described below\r\nand then abort the connection with an \"ech_required\" alert.\r\n```\r\n\r\nThe intent of the differentiator was to fail early and loudly in the presence of server bugs, though I concur that \"illegal_parameter\" was perhaps not the best alert. I tried to fix that with this suggestion. What do you think?",
+              "createdAt": "2021-08-06T16:32:54Z",
+              "updatedAt": "2021-08-06T16:32:57Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzI0Njk4OTg5",
+          "commit": {
+            "abbreviatedOid": "741736c"
+          },
+          "author": "pkelsey",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-06T20:43:47Z",
+          "updatedAt": "2021-08-06T20:43:47Z",
+          "comments": [
+            {
+              "originalPosition": 17,
+              "body": "The decode_error alert language makes sense and is nicely consistent with the requirements for processing a GREASE response.  However, the relocation of the  'abort with ech_required' language ties it to the extension present case and makes it no longer apply to the earlier-TLS-version case down below.  I'm going to take a stab at either trying to refactor this a bit with your new decode_error language on board.",
+              "createdAt": "2021-08-06T20:43:47Z",
+              "updatedAt": "2021-08-06T20:43:47Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzI0NzExMDk3",
+          "commit": {
+            "abbreviatedOid": "189896e"
+          },
+          "author": "pkelsey",
+          "authorAssociation": "CONTRIBUTOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2021-08-06T21:06:15Z",
+          "updatedAt": "2021-08-06T21:06:16Z",
+          "comments": [
+            {
+              "originalPosition": 17,
+              "body": "It seemed the only reasonable way to resolve things was to duplicate the ech_required language in the earler-TLS-version part.  I pushed a new commit to that effect.",
+              "createdAt": "2021-08-06T21:06:15Z",
+              "updatedAt": "2021-08-06T21:06:16Z"
+            }
+          ]
+        },
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzI0NzE2NDEy",
+          "commit": {
+            "abbreviatedOid": "189896e"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2021-08-06T21:17:04Z",
+          "updatedAt": "2021-08-06T21:17:04Z",
+          "comments": []
+        }
+      ]
+    },
+    {
+      "number": 509,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzA1MDg3Nzc0",
+      "title": "Clarify the document's assumption of restricted attacker location",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/509",
+      "state": "CLOSED",
+      "author": "pkelsey",
+      "authorAssociation": "CONTRIBUTOR",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2021-08-05T23:34:29Z",
+      "updatedAt": "2021-08-06T14:31:59Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "27cc51ad3f295ad76bcf19cbb16c1514c4e5765b",
+      "headRepository": "pkelsey/draft-ietf-tls-esni",
+      "headRefName": "clarify-attacker-location",
+      "headRefOid": "72af02c610c1ac9f7e8e1820e1f1941014fdfc33",
+      "closedAt": "2021-08-06T12:36:04Z",
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [
+        {
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "body": "This isn't accurate -- we assume the attacker can exist anywhere. Closing as a result.",
+          "createdAt": "2021-08-06T12:36:04Z",
+          "updatedAt": "2021-08-06T12:36:04Z"
+        },
+        {
+          "author": "pkelsey",
+          "authorAssociation": "CONTRIBUTOR",
+          "body": "Do you assume the attacker can exist on both network segments in split mode?",
+          "createdAt": "2021-08-06T13:59:41Z",
+          "updatedAt": "2021-08-06T13:59:41Z"
+        },
+        {
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "body": "Yep, we assume the attacker can exist anywhere.",
+          "createdAt": "2021-08-06T14:31:59Z",
+          "updatedAt": "2021-08-06T14:31:59Z"
+        }
+      ],
+      "reviews": []
+    },
+    {
+      "number": 510,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzA1MDg3OTg1",
+      "title": "Clarify ambiguous grammar",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/510",
+      "state": "MERGED",
+      "author": "pkelsey",
+      "authorAssociation": "CONTRIBUTOR",
+      "assignees": [],
+      "labels": [],
+      "body": "As previously written, the wording could be understood as referring to\r\nan application using some other (D)TLS mechanism to indicate which\r\nECHConfig candidate value selection method to use.",
+      "createdAt": "2021-08-05T23:35:12Z",
+      "updatedAt": "2021-08-06T12:38:03Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "35e998e4bbc61e2309176128084c3fadb45289e1",
+      "headRepository": "pkelsey/draft-ietf-tls-esni",
+      "headRefName": "clarify-choice-of-ech-config-candidate-selection-method",
+      "headRefOid": "e95cde0fc723db7ee94e6f3f77e5c3bbbad3c3d9",
+      "closedAt": "2021-08-06T12:38:03Z",
+      "mergedAt": "2021-08-06T12:38:03Z",
+      "mergedBy": "chris-wood",
+      "mergeCommit": {
+        "oid": "470020e9785390674e2de754884517a89b66a237"
+      },
+      "comments": [],
+      "reviews": []
+    },
+    {
+      "number": 511,
+      "id": "MDExOlB1bGxSZXF1ZXN0NzA1MDg4MjQw",
+      "title": "Remove sentence that is redundant with the paragraph that follows",
+      "url": "https://github.com/tlswg/draft-ietf-tls-esni/pull/511",
+      "state": "MERGED",
+      "author": "pkelsey",
+      "authorAssociation": "CONTRIBUTOR",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2021-08-05T23:36:05Z",
+      "updatedAt": "2021-08-06T12:34:34Z",
+      "baseRepository": "tlswg/draft-ietf-tls-esni",
+      "baseRefName": "master",
+      "baseRefOid": "27cc51ad3f295ad76bcf19cbb16c1514c4e5765b",
+      "headRepository": "pkelsey/draft-ietf-tls-esni",
+      "headRefName": "redundancy-unrecognzied-mandatory-extension",
+      "headRefOid": "1d3315b4fdc7a68a144b52775d492f7c6a3593d3",
+      "closedAt": "2021-08-06T12:34:34Z",
+      "mergedAt": "2021-08-06T12:34:34Z",
+      "mergedBy": "chris-wood",
+      "mergeCommit": {
+        "oid": "35e998e4bbc61e2309176128084c3fadb45289e1"
+      },
+      "comments": [
+        {
+          "author": "cbartle891",
+          "authorAssociation": "COLLABORATOR",
+          "body": "I can see how that sentence is redundant, but it seems like it would be helpful to implementers.",
+          "createdAt": "2021-08-06T03:23:36Z",
+          "updatedAt": "2021-08-06T03:23:36Z"
+        }
+      ],
+      "reviews": [
+        {
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NzI0MzA4NTkx",
+          "commit": {
+            "abbreviatedOid": "1d3315b"
+          },
+          "author": "chris-wood",
+          "authorAssociation": "COLLABORATOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2021-08-06T12:33:38Z",
+          "updatedAt": "2021-08-06T12:33:38Z",
+          "comments": []
+        }
+      ]
     }
   ]
 }
